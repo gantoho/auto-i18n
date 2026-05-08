@@ -1,0 +1,127 @@
+package xlsx
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/xuri/excelize/v2"
+)
+
+type XLSXReader struct {
+	Path string
+}
+
+type XLSXWriter struct {
+	Path string
+}
+
+type SheetData struct {
+	SourceLang  string
+	TargetLangs []string
+	Rows        [][]string
+}
+
+func NewWriter(path string) *XLSXWriter {
+	return &XLSXWriter{Path: path}
+}
+
+func NewReader(path string) *XLSXReader {
+	return &XLSXReader{Path: path}
+}
+
+func (w *XLSXWriter) Write(sourceLang string, sourceValues []string, targetLangs []string) error {
+	os.Remove(w.Path)
+
+	f := excelize.NewFile()
+	defer f.Close()
+
+	sheet := "Sheet1"
+
+	headers := []string{sourceLang}
+	for _, lang := range targetLangs {
+		if lang != sourceLang {
+			headers = append(headers, lang)
+		}
+	}
+
+	for i, h := range headers {
+		col, _ := excelize.ColumnNumberToName(i + 1)
+		cell := fmt.Sprintf("%s1", col)
+		f.SetCellValue(sheet, cell, h)
+	}
+
+	style, _ := f.NewStyle(&excelize.Style{
+		Font: &excelize.Font{Bold: true},
+	})
+	lastCol := mustColumnName(len(headers))
+	f.SetCellStyle(sheet, "A1", fmt.Sprintf("%s1", lastCol), style)
+
+	for rowIdx, val := range sourceValues {
+		rowNum := rowIdx + 2
+		for ci := 1; ci <= len(headers); ci++ {
+			col, _ := excelize.ColumnNumberToName(ci)
+			cellVal := ""
+			if ci == 1 {
+				cellVal = val
+			}
+			f.SetCellStr(sheet, fmt.Sprintf("%s%d", col, rowNum), cellVal)
+		}
+	}
+
+	firstCol, _ := excelize.ColumnNumberToName(1)
+	f.SetColWidth(sheet, firstCol, lastCol, 30)
+
+	return f.SaveAs(w.Path)
+}
+
+func (r *XLSXReader) Read() (*SheetData, error) {
+	f, err := excelize.OpenFile(r.Path)
+	if err != nil {
+		return nil, fmt.Errorf("open xlsx: %w", err)
+	}
+	defer f.Close()
+
+	sheet := f.GetSheetName(0)
+
+	rows, err := f.GetRows(sheet)
+	if err != nil {
+		return nil, fmt.Errorf("read rows: %w", err)
+	}
+
+	if len(rows) < 1 {
+		return nil, fmt.Errorf("empty xlsx file")
+	}
+
+	headers := rows[0]
+	if len(headers) < 2 {
+		return nil, fmt.Errorf("xlsx must have at least 2 language columns, got %d", len(headers))
+	}
+
+	data := &SheetData{
+		SourceLang:  headers[0],
+		TargetLangs: headers[1:],
+		Rows:        make([][]string, 0, len(rows)-1),
+	}
+
+	for i := 1; i < len(rows); i++ {
+		row := rows[i]
+		if len(row) == 0 {
+			continue
+		}
+		vals := make([]string, len(headers))
+		for j := 0; j < len(headers) && j < len(row); j++ {
+			vals[j] = row[j]
+		}
+		data.Rows = append(data.Rows, vals)
+	}
+
+	return data, nil
+}
+
+func mustColumnName(n int) string {
+	name, err := excelize.ColumnNumberToName(n)
+	if err != nil {
+		panic(err)
+	}
+	return name
+}

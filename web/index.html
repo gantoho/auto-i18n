@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto i18n</title>
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-dark: #3730a3;
+    --success: #059669;
+    --success-light: #ecfdf5;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-900: #111827;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-lg: 0 4px 6px rgba(0,0,0,.07), 0 10px 15px rgba(0,0,0,.05);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-900);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  nav {
+    background: #fff;
+    border-bottom: 1px solid var(--gray-200);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    height: 56px;
+    gap: 32px;
+    flex-shrink: 0;
+  }
+
+  nav .brand {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+
+  nav .brand span { font-size: 22px; }
+
+  nav .nav-tabs { display: flex; gap: 4px; }
+
+  nav .nav-tab {
+    padding: 6px 16px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--gray-500);
+    transition: all .15s;
+  }
+
+  nav .nav-tab:hover { color: var(--gray-700); background: var(--gray-100); }
+
+  nav .nav-tab.active {
+    color: var(--primary);
+    background: var(--primary-light);
+    font-weight: 600;
+  }
+
+  .main {
+    flex: 1;
+    padding: 32px 24px;
+    max-width: 720px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .panel { display: none; }
+
+  .panel.active { display: block; }
+
+  .panel-header { margin-bottom: 28px; }
+
+  .panel-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 6px;
+  }
+
+  .panel-header p {
+    font-size: 14px;
+    color: var(--gray-500);
+    line-height: 1.5;
+  }
+
+  .steps {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+    counter-reset: step;
+  }
+
+  .step {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    font-size: 13px;
+    color: var(--gray-600);
+  }
+
+  .step::before {
+    counter-increment: step;
+    content: counter(step);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .drop-zone {
+    border: 2px dashed var(--gray-300);
+    border-radius: var(--radius);
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .15s;
+    background: var(--gray-50);
+  }
+
+  .drop-zone:hover { border-color: var(--primary); background: var(--primary-light); }
+
+  .drop-zone.dragover { border-color: var(--primary); background: var(--primary-light); }
+
+  .drop-zone .dz-icon { font-size: 32px; margin-bottom: 8px; }
+
+  .drop-zone .dz-title { font-size: 14px; font-weight: 600; color: var(--gray-700); margin-bottom: 2px; }
+
+  .drop-zone .dz-sub { font-size: 13px; color: var(--gray-400); }
+
+  .drop-zone .dz-file {
+    display: none;
+    padding: 8px 14px;
+    background: var(--primary-light);
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--primary);
+  }
+
+  .drop-zone.has-file { border-color: var(--success); background: var(--success-light); }
+
+  .drop-zone.has-file .dz-file { display: inline-flex; align-items: center; gap: 6px; }
+
+  .drop-zone.has-file .dz-placeholder { display: none; }
+
+  .field { margin-bottom: 16px; }
+
+  .field:last-child { margin-bottom: 0; }
+
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 6px;
+  }
+
+  .field label .hint { font-weight: 400; color: var(--gray-400); font-size: 12px; }
+
+  .field input[type="text"] {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color .15s;
+  }
+
+  .field input[type="text"]:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+
+  .lang-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .lang-grid button {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    border: 1.5px solid var(--gray-200);
+    background: #fff;
+    color: var(--gray-600);
+    transition: all .12s;
+    font-family: inherit;
+  }
+
+  .lang-grid button:hover { border-color: var(--primary); color: var(--primary); }
+
+  .lang-grid button.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  .actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .btn {
+    padding: 9px 22px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .12s;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+  }
+
+  .btn:active { transform: scale(.97); }
+
+  .btn-primary { background: var(--primary); color: #fff; }
+
+  .btn-primary:hover { background: var(--primary-dark); box-shadow: var(--shadow-lg); }
+
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+
+  .btn-primary:disabled:active { transform: none; }
+
+  .btn-success { background: var(--success); color: #fff; }
+
+  .btn-success:hover { background: #047857; box-shadow: var(--shadow-lg); }
+
+  .btn-success:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+
+  .btn-success:disabled:active { transform: none; }
+
+  .status {
+    display: none;
+    margin-top: 12px;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .status.show { display: block; }
+
+  .status.info { background: var(--primary-light); color: var(--primary-dark); border: 1px solid #c7d2fe; }
+
+  .status.ok { background: var(--success-light); color: #065f46; border: 1px solid #a7f3d0; }
+
+  .status.err { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+  .status .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #c7d2fe;
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status .btn { margin-top: 8px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  @media (max-width: 600px) {
+    .two-col { grid-template-columns: 1fr; }
+    .steps { flex-direction: column; }
+    nav { padding: 0 16px; gap: 16px; }
+    .main { padding: 20px 16px; }
+    nav .brand { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="brand" href="/"><span>&#127758;</span>Auto i18n</a>
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-tab="extract">&#128229; 提取文案</button>
+    <button class="nav-tab" data-tab="generate">&#128230; 生成 JSON</button>
+  </div>
+</nav>
+
+<div class="main">
+
+<div class="panel active" id="panel-extract">
+  <div class="panel-header">
+    <h2>提取可翻译文案</h2>
+    <p>从源语言 JSON 中自动提取所有可翻译文案，生成 Excel 翻译模板</p>
+  </div>
+
+  <div class="steps">
+    <div class="step">上传 JSON 文件</div>
+    <div class="step">指定目标语言</div>
+    <div class="step">下载模板</div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label>源语言 JSON</label>
+      <div class="drop-zone" id="drop-extract">
+        <div class="dz-placeholder">
+          <div class="dz-icon">&#128218;</div>
+          <div class="dz-title">点击或拖拽上传</div>
+          <div class="dz-sub">支持 .json 格式</div>
+        </div>
+        <div class="dz-file">&#128196; <span id="extract-filename"></span></div>
+      </div>
+      <input type="file" id="extract-input" accept=".json" style="display:none">
+    </div>
+
+    <div class="field">
+      <label>目标语言 <span class="hint">（翻译人员需要翻译的语言）</span></label>
+      <input type="text" id="extract-langs" placeholder="例如: zh-CN, ja, ko">
+      <div class="lang-grid">
+        <button data-lang="zh-CN">zh-CN</button>
+        <button data-lang="ja">ja</button>
+        <button data-lang="ko">ko</button>
+        <button data-lang="fr">fr</button>
+        <button data-lang="de">de</button>
+        <button data-lang="es">es</button>
+        <button data-lang="pt">pt</button>
+        <button data-lang="ru">ru</button>
+        <button data-lang="th">th</button>
+        <button data-lang="vi">vi</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="extract-btn" disabled>生成 xlsx 模板</button>
+    </div>
+
+    <div class="status" id="extract-status"></div>
+  </div>
+</div>
+
+<div class="panel" id="panel-generate">
+  <div class="panel-header">
+    <h2>生成翻译 JSON</h2>
+    <p>将翻译完成的 xlsx 回填到原始 JSON 结构，生成各语言 JSON 文件</p>
+  </div>
+
+  <div class="steps">
+    <div class="step">上传翻译 xlsx</div>
+    <div class="step">上传原始 JSON</div>
+    <div class="step">下载 JSON</div>
+  </div>
+
+  <div class="card">
+    <div class="two-col">
+      <div class="field">
+        <label>翻译完成的 xlsx</label>
+        <div class="drop-zone" id="drop-xlsx">
+          <div class="dz-placeholder">
+            <div class="dz-icon">&#128202;</div>
+            <div class="dz-title">点击或拖拽上传</div>
+            <div class="dz-sub">支持 .xlsx 格式</div>
+          </div>
+          <div class="dz-file">&#128196; <span id="xlsx-filename"></span></div>
+        </div>
+        <input type="file" id="xlsx-input" accept=".xlsx" style="display:none">
+      </div>
+
+      <div class="field">
+        <label>原始 JSON</label>
+        <div class="drop-zone" id="drop-json">
+          <div class="dz-placeholder">
+            <div class="dz-icon">&#128218;</div>
+            <div class="dz-title">点击或拖拽上传</div>
+            <div class="dz-sub">支持 .json 格式</div>
+          </div>
+          <div class="dz-file">&#128196; <span id="json-filename"></span></div>
+        </div>
+        <input type="file" id="json-input" accept=".json" style="display:none">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-success" id="generate-btn" disabled>生成 JSON 文件</button>
+    </div>
+
+    <div class="status" id="generate-status"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// --- tab switching ---
+document.querySelectorAll('.nav-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// --- lang tags ---
+document.querySelectorAll('.lang-grid button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.classList.toggle('selected');
+    const selected = document.querySelectorAll('.lang-grid button.selected');
+    document.getElementById('extract-langs').value = Array.from(selected).map(b => b.dataset.lang).join(',');
+  });
+});
+
+// --- drop zone helper ---
+function setupDropZone(dzId, inputId, nameId, cb) {
+  const dz = document.getElementById(dzId);
+  const inp = document.getElementById(inputId);
+  dz.addEventListener('click', () => inp.click());
+  inp.addEventListener('change', () => {
+    if (inp.files.length) {
+      dz.classList.add('has-file');
+      document.getElementById(nameId).textContent = inp.files[0].name;
+      cb();
+    }
+  });
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('dragover');
+    if (e.dataTransfer.files.length) {
+      inp.files = e.dataTransfer.files;
+      dz.classList.add('has-file');
+      document.getElementById(nameId).textContent = inp.files[0].name;
+      cb();
+    }
+  });
+}
+
+function showStatus(id, type, html) {
+  const el = document.getElementById(id);
+  el.className = 'status show ' + type;
+  el.innerHTML = html;
+}
+
+// --- extract ---
+setupDropZone('drop-extract', 'extract-input', 'extract-filename', updateExtract);
+document.getElementById('extract-langs').addEventListener('input', updateExtract);
+function updateExtract() {
+  document.getElementById('extract-btn').disabled = !document.getElementById('extract-input').files.length;
+}
+
+document.getElementById('extract-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('extract-btn');
+  btn.disabled = true;
+  showStatus('extract-status', 'info', '<span class="spinner"></span>正在提取文案...');
+  const fd = new FormData();
+  fd.append('file', document.getElementById('extract-input').files[0]);
+  fd.append('langs', document.getElementById('extract-langs').value);
+  try {
+    const r = await fetch('/api/extract', { method: 'POST', body: fd });
+    if (!r.ok) throw new Error(await r.text());
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const name = document.getElementById('extract-input').files[0].name.replace(/\.json$/i, '.xlsx');
+    showStatus('extract-status', 'ok', '&#9989; 提取成功<br><a href="' + url + '" download="' + name + '" class="btn btn-primary">&#11015; 下载 xlsx 模板</a>');
+  } catch (e) {
+    showStatus('extract-status', 'err', '&#10060; ' + (e.message || '处理失败'));
+  } finally { btn.disabled = false; }
+});
+
+// --- generate ---
+setupDropZone('drop-xlsx', 'xlsx-input', 'xlsx-filename', updateGenerate);
+setupDropZone('drop-json', 'json-input', 'json-filename', updateGenerate);
+function updateGenerate() {
+  const a = document.getElementById('xlsx-input').files.length;
+  const b = document.getElementById('json-input').files.length;
+  document.getElementById('generate-btn').disabled = !(a && b);
+}
+
+document.getElementById('generate-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('generate-btn');
+  btn.disabled = true;
+  showStatus('generate-status', 'info', '<span class="spinner"></span>正在生成 JSON...');
+  const fd = new FormData();
+  fd.append('xlsx', document.getElementById('xlsx-input').files[0]);
+  fd.append('json', document.getElementById('json-input').files[0]);
+  try {
+    const r = await fetch('/api/generate', { method: 'POST', body: fd });
+    if (!r.ok) throw new Error(await r.text());
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const name = document.getElementById('json-input').files[0].name.replace(/\.json$/i, '_translations.zip');
+    showStatus('generate-status', 'ok', '&#9989; 生成成功<br><a href="' + url + '" download="' + name + '" class="btn btn-success">&#11015; 下载 JSON（ZIP）</a>');
+  } catch (e) {
+    showStatus('generate-status', 'err', '&#10060; ' + (e.message || '处理失败'));
+  } finally { btn.disabled = false; }
+});
+</script>
+</body>
+</html>

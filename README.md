@@ -1,6 +1,6 @@
 # auto-i18n
 
-自动化国际化翻译工作流工具。只需 2 条命令，即可完成从 JSON 提取文案 → 生成 Excel 翻译模板 → 翻译回填的完整流程。
+自动化国际化翻译工作流工具。只需 2 条命令（或一个 Web 页面），即可完成从 JSON 提取文案 → 生成 Excel 翻译模板 → 翻译回填的完整流程。
 
 ## 痛点
 
@@ -23,15 +23,18 @@
                                     ▼
                     ┌─────────────────────────────┐
                     │  auto-i18n extract           │
+                    │  auto-i18n server            │
                     │  ✓ 递归遍历 JSON             │
-                    │  ✓ 自动过滤媒体路径/链接等    │
+                    │  ✓ 自动过滤媒体路径/邮箱等   │
                     │  ✓ 从文件名识别源语言         │
+                    │  ✓ 字段顺序与源文件一致       │
                     └──────────┬──────────────────┘
                                │
                                ▼
                     ┌──────────────────────┐
-                    │  about_us_en.xlsx     │
-                    │  (翻译模板)           │
+                    │  about_us.xlsx        │
+                    │  (翻译模板, 无 key)   │
+                    │  en │ cn │ ja │ ko   │
                     └──────────┬───────────┘
                                │
                                ▼
@@ -43,9 +46,11 @@
                                ▼
                     ┌─────────────────────────────┐
                     │  auto-i18n generate          │
-                    │  ✓ 读取 Excel 翻译内容       │
+                    │  auto-i18n server            │
+                    │  ✓ 按行顺序映射翻译          │
                     │  ✓ 回填到原始 JSON 结构      │
                     │  ✓ 保持非翻译字段原样        │
+                    │  ✓ 字段顺序与源文件一致       │
                     └──────────┬──────────────────┘
                                │
                     ┌──────────┼──────────┐
@@ -69,7 +74,7 @@ go build -o auto-i18n .
 
 需要 Go 1.21+。
 
-## 快速开始
+## 快速开始（命令行）
 
 ### 第 1 步：提取可翻译文案
 
@@ -91,7 +96,8 @@ go build -o auto-i18n .
   ],
   "footer": {
     "copyright": "© 2025 Company Name",
-    "company_link": "https://company.com"
+    "company_link": "https://company.com",
+    "email": "contact@company.com"
   }
 }
 ```
@@ -103,24 +109,31 @@ auto-i18n extract about_us_en.json -t zh-CN,ja,ko
 ```
 
 - 自动从文件名识别源语言为 `en`
-- `bgimg_src`（`_src` 后缀）、`company_link`（`_link` 后缀）被自动过滤
+- `bgimg_src`（`_src` 后缀）、`company_link`（`_link` 后缀）、`email` 自动过滤
 - 生成 `about_us_en.xlsx`
 
-生成的 Excel 表格：
+生成的 Excel 表格（无 key_path 列，通过行顺序映射）：
 
-| key_path | en | zh-CN | ja | ko |
-|----------|----|-------|----|----|
-| banner.title | Hello Banner | | | |
-| banner.content | This is the about us banner content | | | |
-| sections.0.title | Our Mission | | | |
-| sections.0.desc | We aim to provide the best service | | | |
-| footer.copyright | © 2025 Company Name | | | |
+| en | zh-CN | ja | ko |
+|----|-------|----|----|
+| Hello Banner | | | |
+| This is the about us banner content | | | |
+| Our Mission | | | |
+| We aim to provide the best service | | | |
+| ... | | | |
 
 > **提示**：如果不指定 `-t` 参数，生成的 xlsx 只有源语言列，翻译人员可以自行在 Excel 中插入新列填写。
 
 ### 第 2 步：翻译人员填写
 
 将 xlsx 文件发给翻译人员，翻译人员直接用 Excel/WPS 打开，在各语言列中填写翻译内容。
+
+| en | zh-CN | ja | ko |
+|----|-------|----|----|
+| Hello Banner | 你好横幅 | こんにちは | 안녕하세요 |
+| This is the about us banner content | 这是横幅内容 | ... | ... |
+| Our Mission | 我们的使命 | ... | ... |
+| ... | ... | ... | ... |
 
 ### 第 3 步：生成各语言 JSON
 
@@ -133,6 +146,7 @@ auto-i18n generate about_us_en.xlsx
 程序自动：
 - 从 xlsx 表头读取语言列表（`en` 为源语言，`zh-CN`、`ja`、`ko` 为目标语言）
 - 在同目录寻找原始 JSON 文件 `about_us_en.json`
+- 重新从源 JSON 提取字段路径，按行位置一对一映射
 - 生成各语言 JSON 文件
 
 输出：
@@ -143,7 +157,7 @@ auto-i18n generate about_us_en.xlsx
   ✓ about_us_ko.json
 ```
 
-生成的 `about_us_zh-CN.json`：
+生成的 `about_us_zh-CN.json`（字段顺序与源文件完全一致）：
 
 ```json
 {
@@ -161,12 +175,39 @@ auto-i18n generate about_us_en.xlsx
   ],
   "footer": {
     "copyright": "© 2025 公司名称",
-    "company_link": "https://company.com"
+    "company_link": "https://company.com",
+    "email": "contact@company.com"
   }
 }
 ```
 
-所有非翻译字段（媒体路径、链接）被完整保留，JSON 结构与源文件完全一致。
+所有非翻译字段（媒体路径、链接、邮箱）被完整保留，JSON 结构与源文件完全一致。
+
+## 快速开始（Web UI）
+
+auto-i18n 内置了 Web 界面，提供更直观的操作方式。
+
+### 启动服务
+
+```bash
+auto-i18n server
+```
+
+访问 `http://localhost:8080` 即可看到操作界面。
+
+### 提取翻译模板
+
+1. 点击「提取文案」标签
+2. 上传 JSON 文件（拖拽或点击）
+3. 选择目标语言（点击标签或手动输入）
+4. 点击「生成 xlsx 模板」→ 自动下载
+
+### 生成 JSON 文件
+
+1. 点击「生成 JSON」标签
+2. 上传翻译完成的 xlsx 文件
+3. 上传源 JSON 文件
+4. 点击「生成 JSON 文件」→ 自动下载 ZIP 包
 
 ## 命令参考
 
@@ -220,6 +261,32 @@ auto-i18n generate about_us_en.xlsx
 auto-i18n generate about_us_en.xlsx -o ./output
 ```
 
+### `server`
+
+启动 Web 服务，通过浏览器进行操作。
+
+```bash
+auto-i18n server [flags]
+```
+
+参数：
+
+| 参数 | 说明 |
+|------|------|
+| `-p, --port` | 服务端口号（默认 8080） |
+
+示例：
+
+```bash
+# 默认端口
+auto-i18n server
+
+# 自定义端口
+auto-i18n server -p 3000
+```
+
+启动后访问 `http://localhost:8080` 使用 Web 界面。
+
 ### `version`
 
 显示版本信息。
@@ -227,6 +294,64 @@ auto-i18n generate about_us_en.xlsx -o ./output
 ```bash
 auto-i18n version
 ```
+
+## API 接口
+
+启动 `server` 后，提供以下 HTTP API：
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/` | GET | Web UI 页面 |
+| `/api/health` | GET | 健康检查 |
+| `/api/extract` | POST | 上传 JSON → 下载 xlsx |
+| `/api/generate` | POST | 上传 xlsx+JSON → 下载 ZIP |
+
+### `/api/extract`
+
+**请求格式**：`multipart/form-data`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `file` | file | 源语言 JSON 文件 |
+| `langs` | string | 目标语言，逗号分隔（可选） |
+
+**响应**：xlsx 文件下载。
+
+### `/api/generate`
+
+**请求格式**：`multipart/form-data`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `xlsx` | file | 翻译完成的 xlsx 文件 |
+| `json` | file | 原始 JSON 文件 |
+
+**响应**：ZIP 包下载（内含各语言 JSON 文件）。
+
+## 自动过滤规则
+
+程序会自动识别以下内容，不会将其列为需要翻译的文案：
+
+### 键名过滤（后缀匹配）
+
+```
+_src, _link, _no, _url, _path, _href
+_img, _icon, _class, _id, _key, _mail
+email
+```
+
+### 值内容自动检测
+
+| 类型 | 示例 |
+|------|------|
+| URL/路径 | `https://...`, `/images/...`, `./path/...` |
+| 邮箱 | `user@company.com` |
+| 纯数字 | `12345`, `3.14` |
+| 空字符串 | `""` |
+
+### JSON 字段顺序
+
+程序使用 `json.Decoder` 的 Token API 按**文档顺序**遍历 JSON，提取的文案顺序与源文件完全一致。生成的目标语言 JSON 也保持相同的字段顺序。
 
 ## 常见问题
 
@@ -241,26 +366,15 @@ auto-i18n version
 | `contact_ja.json` | ja |
 | `intro_fr.json` | fr |
 
-> 如果文件名末尾不是语言代码，程序也能正常工作，只是在生成的 xlsx 中源语言列名会使用默认值。
+> 如果文件名末尾不是语言代码，程序也能正常工作，只是生成的 xlsx 中源语言列名会使用默认值。
 
-### 如何自定义哪些字段不参与翻译？
+### 为什么 xlsx 中没有 key_path 列？
 
-程序默认跳过以下后缀的键名：
-
-```
-_src, _link, _no, _url, _path, _href, _img, _icon, _class, _id, _key
-```
-
-此外，以下值会被自动跳过：
-- 以 `http://` 或 `https://` 开头的 URL
-- 以 `/`、`./`、`../` 开头且包含文件扩展名的路径
-- 纯数字值
+从 v0.2 版本开始去掉了 key_path 列。程序通过**行顺序**建立映射关系——第 1 行数据对应 JSON 遍历的第 1 个文案，第 2 行对应第 2 个，以此类推。这样翻译人员看到的是更干净的表格，只需从左到右填写即可。
 
 ### JSON 中嵌套了数组/对象怎么办？
 
-程序会对 JSON 进行深度优先递归遍历，无论嵌套多深都能正确处理。
-
-数组元素会以 `array.0`、`array.1` 的形式展平到 Excel 中，回填时自动恢复为数组结构。
+程序会对 JSON 进行深度优先递归遍历，无论嵌套多深都能正确处理。数组元素会以 `sections.0.title`、`sections.1.title` 的形式在内部管理路径，翻译人员无需关心这些细节。
 
 ### 翻译人员需要在 Excel 中做什么？
 
@@ -271,3 +385,5 @@ _src, _link, _no, _url, _path, _href, _img, _icon, _class, _id, _key
 - **语言**: Go
 - **CLI**: [cobra](https://github.com/spf13/cobra)
 - **Excel**: [excelize](https://github.com/xuri/excelize/v2)
+- **JSON 操作**: [sjson](https://github.com/tidwall/sjson)
+- **Web UI**: 纯 HTML/CSS/JS（嵌入到二进制，无外部依赖）

@@ -1,21 +1,29 @@
 package main
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
 
+	"auto_i18n/internal/api"
 	"auto_i18n/internal/extractor"
 	"auto_i18n/internal/generator"
 	"auto_i18n/internal/xlsx"
 )
 
+//go:embed web/index.html
+var webFS embed.FS
+
 var (
 	targetLangs string
 	outputDir   string
+	serverPort  int
 )
 
 var rootCmd = &cobra.Command{
@@ -25,7 +33,8 @@ var rootCmd = &cobra.Command{
 
 工作流程:
   1. extract  - 从源语言 JSON 提取可翻译文案，生成 xlsx 模板
-  2. generate - 从翻译完成的 xlsx 回填生成各语言 JSON 文件`,
+  2. generate - 从翻译完成的 xlsx 回填生成各语言 JSON 文件
+  3. server   - 启动 Web 服务，通过浏览器进行操作`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
@@ -133,6 +142,29 @@ var generateCmd = &cobra.Command{
 	},
 }
 
+var serverCmd = &cobra.Command{
+	Use:   "server",
+	Short: "启动 Web 服务，通过浏览器进行操作",
+	Long: `启动一个 Web 服务器，提供美观的 Web UI 界面，通过浏览器完成提取和生成操作。
+
+访问 http://localhost:8080 即可使用。`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		subFS, err := fs.Sub(webFS, "web")
+		if err != nil {
+			return fmt.Errorf("init web fs: %w", err)
+		}
+
+		mux := http.NewServeMux()
+		api.SetupRoutes(mux, http.FS(subFS))
+
+		addr := fmt.Sprintf(":%d", serverPort)
+		fmt.Printf("🌐 Auto i18n Web UI started\n")
+		fmt.Printf("   Open: http://localhost%s\n", addr)
+		fmt.Printf("   Press Ctrl+C to stop\n")
+		return http.ListenAndServe(addr, mux)
+	},
+}
+
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "显示版本信息",
@@ -166,8 +198,12 @@ func init() {
 	generateCmd.Flags().StringVarP(&outputDir, "output-dir", "o", "",
 		"JSON 输出目录 (默认与 xlsx 同目录)")
 
+	serverCmd.Flags().IntVarP(&serverPort, "port", "p", 8080,
+		"服务端口号")
+
 	rootCmd.AddCommand(extractCmd)
 	rootCmd.AddCommand(generateCmd)
+	rootCmd.AddCommand(serverCmd)
 	rootCmd.AddCommand(versionCmd)
 }
 

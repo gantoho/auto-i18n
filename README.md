@@ -74,6 +74,47 @@ go build -o auto-i18n .
 
 需要 Go 1.21+。
 
+### 交叉编译到其他平台
+
+Go 支持一键交叉编译，在 Windows 上即可编译出 Linux / macOS 版本。
+
+**Windows (PowerShell)：**
+
+```powershell
+# Linux (x86_64)
+$env:GOOS="linux"; $env:GOARCH="amd64"; go build -ldflags="-s -w" -o auto-i18n-linux .
+
+# Linux (ARM64)
+$env:GOOS="linux"; $env:GOARCH="arm64"; go build -ldflags="-s -w" -o auto-i18n-linux-arm64 .
+
+# macOS (Intel)
+$env:GOOS="darwin"; $env:GOARCH="amd64"; go build -ldflags="-s -w" -o auto-i18n-macos .
+
+# macOS (Apple Silicon)
+$env:GOOS="darwin"; $env:GOARCH="arm64"; go build -ldflags="-s -w" -o auto-i18n-macos-arm64 .
+```
+
+**Linux / macOS (bash)：**
+
+```bash
+# Linux (x86_64)
+GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o auto-i18n-linux .
+
+# Linux (ARM64)
+GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o auto-i18n-linux-arm64 .
+
+# macOS (Intel)
+GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o auto-i18n-macos .
+
+# macOS (Apple Silicon)
+GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o auto-i18n-macos-arm64 .
+
+# Windows (从 Linux/Mac 编译)
+GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o auto-i18n.exe .
+```
+
+`-ldflags="-s -w"` 可去掉调试符号，减小约 30% 体积。生成的二进制为静态编译，不依赖任何外部库，可直接在目标系统运行。
+
 ## 快速开始（命令行）
 
 ### 第 1 步：提取可翻译文案
@@ -145,7 +186,7 @@ auto-i18n generate about_us_en.xlsx
 
 程序自动：
 - 从 xlsx 表头读取语言列表（`en` 为源语言，`zh-CN`、`ja`、`ko` 为目标语言）
-- 在同目录寻找原始 JSON 文件 `about_us_en.json`
+- **自动在同目录寻找原始 JSON 文件**：优先找 `about_us_en_en.json`，再找 `about_us_en.json`
 - 重新从源 JSON 提取字段路径，按行位置一对一映射
 - 生成各语言 JSON 文件
 
@@ -190,10 +231,14 @@ auto-i18n 内置了 Web 界面，提供更直观的操作方式。
 ### 启动服务
 
 ```bash
+# 默认端口 8080
 auto-i18n server
+
+# 也可以指定端口
+auto-i18n server -p 3000
 ```
 
-访问 `http://localhost:8080` 即可看到操作界面。
+访问 `http://localhost:8080`（或指定的端口）即可看到操作界面。
 
 ### 提取翻译模板
 
@@ -206,10 +251,26 @@ auto-i18n server
 
 1. 点击「生成 JSON」标签
 2. 上传翻译完成的 xlsx 文件
-3. 上传源 JSON 文件
+3. 上传原始 JSON 文件
 4. 点击「生成 JSON 文件」→ 自动下载 ZIP 包
 
-## 命令参考
+## 全部命令参考
+
+### `help`
+
+查看帮助信息。
+
+```bash
+# 查看所有命令
+auto-i18n help
+auto-i18n --help
+auto-i18n -h
+
+# 查看子命令的详细帮助
+auto-i18n help extract
+auto-i18n help generate
+auto-i18n help server
+```
 
 ### `extract`
 
@@ -225,6 +286,7 @@ auto-i18n extract <json_file> [flags]
 |------|------|
 | `<json_file>` | 源语言 JSON 文件路径（必需） |
 | `-t, --target-langs` | 目标语言列表，逗号分隔，如 `zh-CN,ja,ko` |
+| `-h, --help` | 查看 extract 子命令帮助 |
 
 示例：
 
@@ -244,12 +306,18 @@ auto-i18n extract home_en.json -t zh-CN,ja,ko,fr,de
 auto-i18n generate <xlsx_file> [flags]
 ```
 
+程序会自动在同目录下寻找原始 JSON 文件，查找顺序为：
+
+1. `{xlsx文件名}_{源语言}.json`，例如 `about_us_en_en.json`
+2. `{xlsx文件名}.json`，例如 `about_us_en.json`
+
 参数：
 
 | 参数 | 说明 |
 |------|------|
 | `<xlsx_file>` | 翻译完成的 xlsx 文件路径（必需） |
 | `-o, --output-dir` | JSON 输出目录（默认与 xlsx 同目录） |
+| `-h, --help` | 查看 generate 子命令帮助 |
 
 示例：
 
@@ -274,18 +342,19 @@ auto-i18n server [flags]
 | 参数 | 说明 |
 |------|------|
 | `-p, --port` | 服务端口号（默认 8080） |
+| `-h, --help` | 查看 server 子命令帮助 |
 
 示例：
 
 ```bash
-# 默认端口
+# 使用默认端口 8080
 auto-i18n server
 
 # 自定义端口
 auto-i18n server -p 3000
 ```
 
-启动后访问 `http://localhost:8080` 使用 Web 界面。
+启动后控制台会输出访问地址，按 `Ctrl+C` 停止服务。
 
 ### `version`
 
@@ -293,6 +362,24 @@ auto-i18n server -p 3000
 
 ```bash
 auto-i18n version
+```
+
+### `completion`
+
+生成 shell 自动补全脚本。
+
+```bash
+# 生成 PowerShell 补全
+auto-i18n completion powershell > _auto-i18n.ps1
+
+# 生成 bash 补全
+auto-i18n completion bash > /etc/bash_completion.d/auto-i18n
+
+# 生成 zsh 补全
+auto-i18n completion zsh > /usr/local/share/zsh/site-functions/_auto-i18n
+
+# 生成 fish 补全
+auto-i18n completion fish > ~/.config/fish/completions/auto-i18n.fish
 ```
 
 ## API 接口
@@ -306,6 +393,10 @@ auto-i18n version
 | `/api/extract` | POST | 上传 JSON → 下载 xlsx |
 | `/api/generate` | POST | 上传 xlsx+JSON → 下载 ZIP |
 
+### `/api/health`
+
+**响应**：`{"status":"ok"}`
+
 ### `/api/extract`
 
 **请求格式**：`multipart/form-data`
@@ -315,7 +406,7 @@ auto-i18n version
 | `file` | file | 源语言 JSON 文件 |
 | `langs` | string | 目标语言，逗号分隔（可选） |
 
-**响应**：xlsx 文件下载。
+**响应**：xlsx 文件下载（`Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`）。
 
 ### `/api/generate`
 
@@ -332,26 +423,35 @@ auto-i18n version
 
 程序会自动识别以下内容，不会将其列为需要翻译的文案：
 
-### 键名过滤（后缀匹配）
+### 键名过滤
+
+检查 JSON 对象的键名是否以特定后缀结尾，匹配则跳过整个字段：
 
 ```
-_src, _link, _no, _url, _path, _href
-_img, _icon, _class, _id, _key, _mail
+_src    _link   _no     _url    _path   _href
+_img    _icon   _class  _id     _key    _mail
 email
 ```
 
 ### 值内容自动检测
 
-| 类型 | 示例 |
-|------|------|
-| URL/路径 | `https://...`, `/images/...`, `./path/...` |
-| 邮箱 | `user@company.com` |
-| 纯数字 | `12345`, `3.14` |
-| 空字符串 | `""` |
+检查字符串值是否匹配以下规则，匹配则跳过：
+
+| 类型 | 匹配规则 | 示例 |
+|------|----------|------|
+| 空字符串 | 长度为零 | `""` |
+| 纯数字 | 整数或小数 | `12345`, `3.14`, `-1` |
+| 邮箱 | `xxx@xxx.xxx` 格式 | `user@company.com` |
+| URL | 以 `http://` 或 `https://` 开头 | `https://example.com` |
+| 绝对路径 | 以 `/` 开头且包含文件扩展名 | `/images/banner.png` |
+| 相对路径 | 以 `./` 或 `../` 开头且包含文件扩展名 | `./path/file.pdf` |
 
 ### JSON 字段顺序
 
-程序使用 `json.Decoder` 的 Token API 按**文档顺序**遍历 JSON，提取的文案顺序与源文件完全一致。生成的目标语言 JSON 也保持相同的字段顺序。
+- 程序使用 `json.Decoder` 的 Token API 按**文档顺序**遍历 JSON
+- 提取的文案顺序与源文件完全一致
+- 生成的目标语言 JSON 也保持相同的字段顺序
+- 数组元素按索引顺序遍历
 
 ## 常见问题
 
@@ -372,13 +472,34 @@ email
 
 从 v0.2 版本开始去掉了 key_path 列。程序通过**行顺序**建立映射关系——第 1 行数据对应 JSON 遍历的第 1 个文案，第 2 行对应第 2 个，以此类推。这样翻译人员看到的是更干净的表格，只需从左到右填写即可。
 
+### 如果源 JSON 更新了，之前翻译过的内容怎么处理？
+
+当前版本需要重新执行一次完整流程（extract → 翻译 → generate）。增量更新功能在计划中。
+
 ### JSON 中嵌套了数组/对象怎么办？
 
 程序会对 JSON 进行深度优先递归遍历，无论嵌套多深都能正确处理。数组元素会以 `sections.0.title`、`sections.1.title` 的形式在内部管理路径，翻译人员无需关心这些细节。
 
+### generate 时提示找不到原始 JSON 文件？
+
+程序会自动在同目录下按以下顺序查找：
+
+1. `{xlsx文件名}_{源语言}.json`（例如 xlsx 是 `about_us_en.xlsx`，源语言是 `en`，则找 `about_us_en_en.json`）
+2. `{xlsx文件名}.json`（例如 `about_us_en.json`）
+
+如果文件名不符合这些规则，可以将 JSON 文件重命名后再试。
+
 ### 翻译人员需要在 Excel 中做什么？
 
 只需打开 xlsx 文件，在对应语言的空白列中填入翻译内容即可。不需要接触任何 JSON 文件或命令行。
+
+### 如何查看某个子命令的详细帮助？
+
+```bash
+auto-i18n extract --help
+auto-i18n generate --help
+auto-i18n server --help
+```
 
 ## 技术栈
 

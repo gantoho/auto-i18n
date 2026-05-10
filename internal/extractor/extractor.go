@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"auto_i18n/internal/tagsplit"
 )
 
 var (
@@ -26,18 +28,21 @@ var (
 )
 
 type Extractor struct {
-	JSONPath string
+	JSONPath  string
+	SplitTags bool
 }
 
 type FlatEntry struct {
 	KeyPath         string
 	Value           string
 	HasPlaceholders bool
+	SubIndex        int
 }
 
 type ExtractResult struct {
 	SourceLang string
 	Entries    []FlatEntry
+	SplitMeta  map[string][]string
 }
 
 func New(jsonPath string) *Extractor {
@@ -67,10 +72,43 @@ func (e *Extractor) Run() (*ExtractResult, error) {
 		return nil, fmt.Errorf("flatten json: %w", err)
 	}
 
-	return &ExtractResult{
+	result := &ExtractResult{
 		SourceLang: e.DetectLangFromFilename(),
 		Entries:    entries,
-	}, nil
+	}
+
+	if e.SplitTags {
+		result.applySplitTags()
+	}
+
+	return result, nil
+}
+
+func (r *ExtractResult) applySplitTags() {
+	newEntries := make([]FlatEntry, 0, len(r.Entries))
+	meta := make(map[string][]string)
+
+	for _, entry := range r.Entries {
+		if tagsplit.HasTags(entry.Value) {
+			info := tagsplit.Split(entry.Value)
+			for i, seg := range info.Segments {
+				newEntries = append(newEntries, FlatEntry{
+					KeyPath:         entry.KeyPath,
+					Value:           seg,
+					HasPlaceholders: entry.HasPlaceholders,
+					SubIndex:        i,
+				})
+			}
+			meta[entry.KeyPath] = info.Template
+		} else {
+			newEntries = append(newEntries, entry)
+		}
+	}
+
+	r.Entries = newEntries
+	if len(meta) > 0 {
+		r.SplitMeta = meta
+	}
 }
 
 func ExtractEntries(data []byte) ([]FlatEntry, error) {

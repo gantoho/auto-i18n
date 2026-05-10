@@ -25,6 +25,7 @@ var (
 	outputDir    string
 	serverPort   int
 	jsonPathFlag string
+	splitTags    bool
 )
 
 var rootCmd = &cobra.Command{
@@ -73,6 +74,7 @@ func runExtract(jsonPath string) error {
 	}
 
 	ext := extractor.New(jsonPath)
+	ext.SplitTags = splitTags
 	result, err := ext.Run()
 	if err != nil {
 		return fmt.Errorf("extract failed: %w", err)
@@ -99,8 +101,14 @@ func runExtract(jsonPath string) error {
 	}
 
 	writer := xlsx.NewWriter(xlsxPath)
-	if err := writer.Write(result.SourceLang, values, langs); err != nil {
-		return fmt.Errorf("write xlsx failed: %w", err)
+	if result.SplitMeta != nil {
+		if err := writer.WriteWithMeta(result.SourceLang, values, langs, result.SplitMeta); err != nil {
+			return fmt.Errorf("write xlsx failed: %w", err)
+		}
+	} else {
+		if err := writer.Write(result.SourceLang, values, langs); err != nil {
+			return fmt.Errorf("write xlsx failed: %w", err)
+		}
 	}
 
 	fmt.Printf("✓ Extracted %d entries from %s\n", len(result.Entries), filepath.Base(jsonPath))
@@ -232,6 +240,8 @@ func deriveJSONPath(xlsxPath, sourceLang string) string {
 func init() {
 	extractCmd.Flags().StringVarP(&targetLangs, "target-langs", "t", "",
 		"目标语言列表，逗号分隔 (如 zh-CN,ja,ko)")
+	extractCmd.Flags().BoolVarP(&splitTags, "split-tags", "s", false,
+		"拆分含 HTML 标签的文案为多段分别翻译")
 
 	generateCmd.Flags().StringVarP(&outputDir, "output-dir", "o", "",
 		"JSON 输出目录 (默认与 xlsx 同目录)")

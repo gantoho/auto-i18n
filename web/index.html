@@ -521,6 +521,13 @@
       <input type="text" id="extract-langs" placeholder="例如: zh-CN, ja, ko">
       <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap" id="lang-groups"></div>
       <div class="lg" id="lang-tags"></div>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2);user-select:none">
+          <input type="checkbox" id="split-tags-check" style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)">
+          拆分 HTML 标签文案
+          <span style="font-size:11px;color:var(--text3)">（将含标签的文案拆分为多段分别翻译）</span>
+        </label>
+      </div>
       <div id="lang-editor" style="display:none;margin-top:10px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border)">
         <div style="display:flex;gap:6px;margin-bottom:8px">
           <input type="text" id="new-lang-input" placeholder="输入语言代码如 fr-CA" style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;outline:none;background:var(--surface);color:var(--text)">
@@ -945,6 +952,7 @@ document.getElementById('extract-btn').addEventListener('click', async () => {
   const fd = new FormData();
   fd.append('file', inp.files[0]);
   fd.append('langs', ls);
+  fd.append('splitTags', document.getElementById('split-tags-check').checked ? 'true' : '');
   try {
     const r = await fetch('/api/extract', { method: 'POST', body: fd });
     if (!r.ok) throw new Error(await r.text());

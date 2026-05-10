@@ -1,6 +1,7 @@
 package xlsx
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -19,6 +20,7 @@ type SheetData struct {
 	SourceLang  string
 	TargetLangs []string
 	Rows        [][]string
+	SplitMeta   map[string][]string
 }
 
 func NewWriter(path string) *XLSXWriter {
@@ -30,6 +32,10 @@ func NewReader(path string) *XLSXReader {
 }
 
 func (w *XLSXWriter) Write(sourceLang string, sourceValues []string, targetLangs []string) error {
+	return w.WriteWithMeta(sourceLang, sourceValues, targetLangs, nil)
+}
+
+func (w *XLSXWriter) WriteWithMeta(sourceLang string, sourceValues []string, targetLangs []string, splitMeta map[string][]string) error {
 	os.Remove(w.Path)
 
 	f := excelize.NewFile()
@@ -89,6 +95,12 @@ func (w *XLSXWriter) Write(sourceLang string, sourceValues []string, targetLangs
 		TopLeftCell: "A2",
 	})
 
+	if len(splitMeta) > 0 {
+		metaData, _ := json.Marshal(splitMeta)
+		f.NewSheet("_meta")
+		f.SetCellValue("_meta", "A1", string(metaData))
+	}
+
 	return f.SaveAs(w.Path)
 }
 
@@ -119,6 +131,7 @@ func (r *XLSXReader) Read() (*SheetData, error) {
 		SourceLang:  headers[0],
 		TargetLangs: headers[1:],
 		Rows:        make([][]string, 0, len(rows)-1),
+		SplitMeta:   readSplitMeta(f),
 	}
 
 	for i := 1; i < len(rows); i++ {
@@ -134,6 +147,31 @@ func (r *XLSXReader) Read() (*SheetData, error) {
 	}
 
 	return data, nil
+}
+
+func readSplitMeta(f *excelize.File) map[string][]string {
+	sheets := f.GetSheetList()
+	hasMeta := false
+	for _, s := range sheets {
+		if s == "_meta" {
+			hasMeta = true
+			break
+		}
+	}
+	if !hasMeta {
+		return nil
+	}
+
+	val, err := f.GetCellValue("_meta", "A1")
+	if err != nil || val == "" {
+		return nil
+	}
+
+	var meta map[string][]string
+	if err := json.Unmarshal([]byte(val), &meta); err != nil {
+		return nil
+	}
+	return meta
 }
 
 func mustColumnName(n int) string {

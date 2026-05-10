@@ -45,6 +45,7 @@ func extractHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	langsStr := strings.TrimSpace(r.FormValue("langs"))
+	splitTagsStr := r.FormValue("splitTags")
 	var langs []string
 	if langsStr != "" {
 		for _, l := range strings.Split(langsStr, ",") {
@@ -69,6 +70,7 @@ func extractHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ext := extractor.New(jsonPath)
+	ext.SplitTags = splitTagsStr == "true"
 	result, err := ext.Run()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("extract: %v", err), http.StatusInternalServerError)
@@ -87,9 +89,16 @@ func extractHandler(w http.ResponseWriter, r *http.Request) {
 
 	xlsxPath := filepath.Join(tmpDir, strings.TrimSuffix(header.Filename, filepath.Ext(header.Filename))+".xlsx")
 	writer := xlsx.NewWriter(xlsxPath)
-	if err := writer.Write(result.SourceLang, values, langs); err != nil {
-		http.Error(w, fmt.Sprintf("write xlsx: %v", err), http.StatusInternalServerError)
-		return
+	if result.SplitMeta != nil {
+		if err := writer.WriteWithMeta(result.SourceLang, values, langs, result.SplitMeta); err != nil {
+			http.Error(w, fmt.Sprintf("write xlsx: %v", err), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		if err := writer.Write(result.SourceLang, values, langs); err != nil {
+			http.Error(w, fmt.Sprintf("write xlsx: %v", err), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	xlsxData, err := os.ReadFile(xlsxPath)

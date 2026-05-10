@@ -99,6 +99,7 @@ func extractHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	downloadName := strings.TrimSuffix(header.Filename, filepath.Ext(header.Filename)) + ".xlsx"
+	w.Header().Set("X-I18n-Count", fmt.Sprintf("%d", len(result.Entries)))
 	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, downloadName))
 	w.Write(xlsxData)
@@ -200,9 +201,26 @@ func generateHandler(w http.ResponseWriter, r *http.Request) {
 	zw.Close()
 
 	downloadName := prefix + "_translations.zip"
+	langsStr := strings.Join(sheetData.TargetLangs, ",")
+	w.Header().Set("X-I18n-Count", fmt.Sprintf("%d", len(sheetData.TargetLangs)))
+	w.Header().Set("X-I18n-Langs", langsStr)
+
+	if gen.Result != nil {
+		completionParts := make([]string, 0, len(gen.Result.LangStats))
+		warnParts := make([]string, 0)
+		for _, s := range gen.Result.LangStats {
+			completionParts = append(completionParts, fmt.Sprintf("%s:%.0f", s.Lang, s.CompletionPct))
+			if len(s.PHWarnings) > 0 {
+				warnParts = append(warnParts, fmt.Sprintf("%s:%d", s.Lang, len(s.PHWarnings)))
+			}
+		}
+		w.Header().Set("X-I18n-Completion", strings.Join(completionParts, ","))
+		if len(warnParts) > 0 {
+			w.Header().Set("X-I18n-PH-Warn", strings.Join(warnParts, ","))
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, downloadName))
 	w.Write(buf.Bytes())
 }
-
-

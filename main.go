@@ -21,9 +21,10 @@ import (
 var webFS embed.FS
 
 var (
-	targetLangs string
-	outputDir   string
-	serverPort  int
+	targetLangs  string
+	outputDir    string
+	serverPort   int
+	jsonPathFlag string
 )
 
 var rootCmd = &cobra.Command{
@@ -41,56 +42,74 @@ var rootCmd = &cobra.Command{
 }
 
 var extractCmd = &cobra.Command{
-	Use:   "extract <json_file>",
+	Use:   "extract <json_file...>",
 	Short: "从 JSON 文件提取可翻译文案，生成 xlsx 翻译模板",
-	Args:  cobra.ExactArgs(1),
+	Long: `支持单个或多个 JSON 文件，也支持通配符。
+
+示例:
+  auto-i18n extract about_us_en.json -t zh-CN,ja,ko
+  auto-i18n extract *.json -t zh-CN,ja`,
+	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		jsonPath := args[0]
-
-		if _, err := os.Stat(jsonPath); os.IsNotExist(err) {
-			return fmt.Errorf("file not found: %s", jsonPath)
-		}
-
-		ext := extractor.New(jsonPath)
-		result, err := ext.Run()
+		files, err := expandGlobs(args)
 		if err != nil {
-			return fmt.Errorf("extract failed: %w", err)
+			return err
 		}
-
-		if len(result.Entries) == 0 {
-			return fmt.Errorf("no translatable content found in %s", jsonPath)
+		if len(files) == 0 {
+			return fmt.Errorf("no matching files found")
 		}
-
-		langs := []string{}
-		if targetLangs != "" {
-			for _, l := range strings.Split(targetLangs, ",") {
-				l = strings.TrimSpace(l)
-				if l != "" && l != result.SourceLang {
-					langs = append(langs, l)
-				}
+		for _, jsonPath := range files {
+			if err := runExtract(jsonPath); err != nil {
+				fmt.Fprintf(os.Stderr, "✗ %s: %v\n", filepath.Base(jsonPath), err)
 			}
 		}
-
-		xlsxPath := strings.TrimSuffix(jsonPath, filepath.Ext(jsonPath)) + ".xlsx"
-
-		values := make([]string, len(result.Entries))
-		for i, e := range result.Entries {
-			values[i] = e.Value
-		}
-
-		writer := xlsx.NewWriter(xlsxPath)
-		if err := writer.Write(result.SourceLang, values, langs); err != nil {
-			return fmt.Errorf("write xlsx failed: %w", err)
-		}
-
-		fmt.Printf("✓ Extracted %d entries from %s\n", len(result.Entries), filepath.Base(jsonPath))
-		if result.SourceLang != "" {
-			fmt.Printf("  Source language: %s\n", result.SourceLang)
-		}
-		fmt.Printf("  Output: %s\n", xlsxPath)
-
 		return nil
 	},
+}
+
+func runExtract(jsonPath string) error {
+	if _, err := os.Stat(jsonPath); os.IsNotExist(err) {
+		return fmt.Errorf("file not found: %s", jsonPath)
+	}
+
+	ext := extractor.New(jsonPath)
+	result, err := ext.Run()
+	if err != nil {
+		return fmt.Errorf("extract failed: %w", err)
+	}
+
+	if len(result.Entries) == 0 {
+		return fmt.Errorf("no translatable content found")
+	}
+
+	langs := []string{}
+	if targetLangs != "" {
+		for _, l := range strings.Split(targetLangs, ",") {
+			l = strings.TrimSpace(l)
+			if l != "" && l != result.SourceLang {
+				langs = append(langs, l)
+			}
+		}
+	}
+
+	xlsxPath := strings.TrimSuffix(jsonPath, filepath.Ext(jsonPath)) + ".xlsx"
+	values := make([]string, len(result.Entries))
+	for i, e := range result.Entries {
+		values[i] = e.Value
+	}
+
+	writer := xlsx.NewWriter(xlsxPath)
+	if err := writer.Write(result.SourceLang, values, langs); err != nil {
+		return fmt.Errorf("write xlsx failed: %w", err)
+	}
+
+	fmt.Printf("✓ Extracted %d entries from %s\n", len(result.Entries), filepath.Base(jsonPath))
+	if result.SourceLang != "" {
+		fmt.Printf("  Source language: %s\n", result.SourceLang)
+	}
+	fmt.Printf("  Output: %s\n", xlsxPath)
+
+	return nil
 }
 
 var generateCmd = &cobra.Command{
@@ -99,7 +118,7 @@ var generateCmd = &cobra.Command{
 	Long: `根据翻译完成的 xlsx 文件，为每个目标语言生成对应的 JSON 文件。
 
 程序会：
-  1. 自动从同目录寻找原始 JSON 文件
+  1. 自动从同目录寻找原始 JSON 文件（或通过 --json 指定）
   2. 读取 xlsx 中的翻译内容
   3. 为每个目标语言生成完整 JSON 文件`,
 	Args: cobra.ExactArgs(1),
@@ -121,10 +140,13 @@ var generateCmd = &cobra.Command{
 		}
 
 		sourceLang := data.SourceLang
-		jsonPath := deriveJSONPath(xlsxPath, sourceLang)
+		jsonPath := jsonPathFlag
+		if jsonPath == "" {
+			jsonPath = deriveJSONPath(xlsxPath, sourceLang)
+		}
 
 		if _, err := os.Stat(jsonPath); os.IsNotExist(err) {
-			return fmt.Errorf("cannot find original JSON file: %s (looked for %s)", jsonPath, jsonPath)
+			return fmt.Errorf("cannot find original JSON file: %s\n  look for it in: %s\n  or specify with: --json <path>", jsonPath, jsonPath)
 		}
 
 		outDir := outputDir
@@ -173,6 +195,22 @@ var versionCmd = &cobra.Command{
 	},
 }
 
+func expandGlobs(args []string) ([]string, error) {
+	result := make([]string, 0)
+	for _, arg := range args {
+		if strings.ContainsAny(arg, "*?[") {
+			matches, err := filepath.Glob(arg)
+			if err != nil {
+				return nil, fmt.Errorf("invalid glob pattern '%s': %w", arg, err)
+			}
+			result = append(result, matches...)
+		} else {
+			result = append(result, arg)
+		}
+	}
+	return result, nil
+}
+
 func deriveJSONPath(xlsxPath, sourceLang string) string {
 	dir := filepath.Dir(xlsxPath)
 	base := strings.TrimSuffix(filepath.Base(xlsxPath), filepath.Ext(xlsxPath))
@@ -197,6 +235,8 @@ func init() {
 
 	generateCmd.Flags().StringVarP(&outputDir, "output-dir", "o", "",
 		"JSON 输出目录 (默认与 xlsx 同目录)")
+	generateCmd.Flags().StringVarP(&jsonPathFlag, "json", "j", "",
+		"原始 JSON 文件路径 (默认自动查找)")
 
 	serverCmd.Flags().IntVarP(&serverPort, "port", "p", 8080,
 		"服务端口号")

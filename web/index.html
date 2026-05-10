@@ -6,113 +6,148 @@
 <title>Auto i18n</title>
 <style>
   :root {
+    --bg: #f5f6fa;
+    --surface: #fff;
+    --surface2: #f8f9fc;
+    --border: #e2e5ed;
+    --text: #1e2235;
+    --text2: #6b7280;
+    --text3: #9ca3af;
     --primary: #4f46e5;
-    --primary-light: #eef2ff;
-    --primary-dark: #3730a3;
+    --primary-hover: #4338ca;
+    --primary-bg: #eef2ff;
     --success: #059669;
-    --success-light: #ecfdf5;
-    --gray-50: #f9fafb;
-    --gray-100: #f3f4f6;
-    --gray-200: #e5e7eb;
-    --gray-300: #d1d5db;
-    --gray-400: #9ca3af;
-    --gray-500: #6b7280;
-    --gray-600: #4b5563;
-    --gray-700: #374151;
-    --gray-900: #111827;
-    --radius: 8px;
-    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
-    --shadow-lg: 0 4px 6px rgba(0,0,0,.07), 0 10px 15px rgba(0,0,0,.05);
+    --success-bg: #ecfdf5;
+    --danger: #dc2626;
+    --danger-bg: #fef2f2;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.1);
+    --radius: 10px;
+    --radius-sm: 6px;
+    --transition: .2s ease;
+  }
+
+  .dark {
+    --bg: #0f111a;
+    --surface: #1a1d2e;
+    --surface2: #1e2235;
+    --border: #2a2e42;
+    --text: #e4e6f0;
+    --text2: #9ca3af;
+    --text3: #6b7280;
+    --primary: #6366f1;
+    --primary-hover: #818cf8;
+    --primary-bg: #1e1b4b;
+    --success: #10b981;
+    --success-bg: #064e3b;
+    --danger: #ef4444;
+    --danger-bg: #450a0a;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 1px 3px rgba(0,0,0,.4);
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
-    background: var(--gray-50);
-    color: var(--gray-900);
+    background: var(--bg);
+    color: var(--text);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    transition: background var(--transition), color var(--transition);
   }
 
-  nav {
-    background: #fff;
-    border-bottom: 1px solid var(--gray-200);
+  svg { fill: currentColor; flex-shrink: 0; }
+
+  .top {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background var(--transition), border var(--transition);
+  }
+
+  .top-inner {
+    width: 100%;
+    max-width: 720px;
     padding: 0 24px;
+    height: 60px;
     display: flex;
     align-items: center;
-    height: 56px;
-    gap: 32px;
-    flex-shrink: 0;
+    gap: 28px;
   }
 
-  nav .brand {
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
     font-size: 18px;
     font-weight: 700;
     color: var(--primary);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
   }
 
-  nav .brand span { font-size: 22px; }
+  .logo svg { width: 28px; height: 28px; }
 
-  nav .nav-tabs { display: flex; gap: 4px; }
+  .tabs { display: flex; gap: 2px; }
 
-  nav .nav-tab {
-    padding: 6px 16px;
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
     border: none;
     background: transparent;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    color: var(--gray-500);
+    color: var(--text2);
+    font-family: inherit;
     transition: all .15s;
   }
 
-  nav .nav-tab:hover { color: var(--gray-700); background: var(--gray-100); }
+  .tab:hover { color: var(--text); background: var(--surface2); }
+  .tab.active { color: var(--primary); background: var(--primary-bg); font-weight: 600; }
+  .tab svg { width: 18px; height: 18px; }
 
-  nav .nav-tab.active {
-    color: var(--primary);
-    background: var(--primary-light);
-    font-weight: 600;
+  .spacer { flex: 1; }
+
+  .theme-btn {
+    width: 36px; height: 36px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text2);
+    transition: all .15s;
   }
+
+  .theme-btn:hover { color: var(--text); border-color: var(--text3); }
+  .theme-btn svg { width: 18px; height: 18px; }
 
   .main {
     flex: 1;
-    padding: 32px 24px;
+    padding: 32px 24px 56px;
     max-width: 720px;
     width: 100%;
     margin: 0 auto;
   }
 
   .panel { display: none; }
-
   .panel.active { display: block; }
 
-  .panel-header { margin-bottom: 28px; }
-
-  .panel-header h2 {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--gray-900);
-    margin-bottom: 6px;
-  }
-
-  .panel-header p {
-    font-size: 14px;
-    color: var(--gray-500);
-    line-height: 1.5;
-  }
+  .panel-h { margin-bottom: 24px; }
+  .panel-h h2 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .panel-h p { font-size: 14px; color: var(--text2); }
 
   .steps {
     display: flex;
     gap: 8px;
-    margin-bottom: 28px;
-    counter-reset: step;
+    margin-bottom: 24px;
   }
 
   .step {
@@ -121,145 +156,126 @@
     align-items: center;
     gap: 10px;
     padding: 12px 16px;
-    background: #fff;
-    border: 1px solid var(--gray-200);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
     font-size: 13px;
-    color: var(--gray-600);
+    color: var(--text3);
+    transition: all .2s;
   }
 
-  .step::before {
-    counter-increment: step;
-    content: counter(step);
-    width: 22px;
-    height: 22px;
+  .step .num {
+    width: 24px; height: 24px;
     border-radius: 50%;
-    background: var(--primary);
-    color: #fff;
+    background: var(--border);
+    color: var(--text3);
     font-size: 12px;
     font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    transition: all .2s;
   }
+
+  .step.active { color: var(--text); border-color: var(--primary); }
+  .step.active .num { background: var(--primary); color: #fff; }
+  .step.done { color: var(--success); border-color: var(--success); }
+  .step.done .num { background: var(--success); color: #fff; }
 
   .card {
-    background: #fff;
-    border: 1px solid var(--gray-200);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
-    box-shadow: var(--shadow);
     padding: 24px;
     margin-bottom: 16px;
+    transition: background var(--transition), border var(--transition);
   }
 
-  .card-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--gray-700);
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .drop-zone {
-    border: 2px dashed var(--gray-300);
+  .drop {
+    border: 2px dashed var(--border);
     border-radius: var(--radius);
     padding: 28px 20px;
     text-align: center;
     cursor: pointer;
     transition: all .15s;
-    background: var(--gray-50);
+    background: var(--surface2);
   }
 
-  .drop-zone:hover { border-color: var(--primary); background: var(--primary-light); }
-
-  .drop-zone.dragover { border-color: var(--primary); background: var(--primary-light); }
-
-  .drop-zone .dz-icon { font-size: 32px; margin-bottom: 8px; }
-
-  .drop-zone .dz-title { font-size: 14px; font-weight: 600; color: var(--gray-700); margin-bottom: 2px; }
-
-  .drop-zone .dz-sub { font-size: 13px; color: var(--gray-400); }
-
-  .drop-zone .dz-file {
-    display: none;
+  .drop:hover { border-color: var(--primary); background: var(--primary-bg); }
+  .drop.dragover { border-color: var(--primary); background: var(--primary-bg); }
+  .drop svg { width: 36px; height: 36px; color: var(--text3); margin-bottom: 8px; }
+  .drop .dt { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .drop .ds { font-size: 13px; color: var(--text3); }
+  .drop .df { display: none; align-items: center; gap: 8px; }
+  .drop.has-file { border-color: var(--success); background: var(--success-bg); }
+  .drop.has-file .df { display: inline-flex; }
+  .drop.has-file .dp { display: none; }
+  .drop .df .di {
     padding: 8px 14px;
-    background: var(--primary-light);
-    border-radius: 6px;
+    background: var(--primary-bg);
+    border-radius: var(--radius-sm);
     font-size: 14px;
     font-weight: 500;
     color: var(--primary);
+    text-align: left;
+    max-width: 100%;
   }
+  .drop .df .di .nm { font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+  .drop .df .di .sz { font-weight: 400; font-size: 12px; color: var(--text2); }
 
-  .drop-zone.has-file { border-color: var(--success); background: var(--success-light); }
+  .fld { margin-bottom: 16px; }
+  .fld:last-child { margin-bottom: 0; }
+  .fld label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+  .fld label .ht { font-weight: 400; color: var(--text3); font-size: 12px; }
 
-  .drop-zone.has-file .dz-file { display: inline-flex; align-items: center; gap: 6px; }
-
-  .drop-zone.has-file .dz-placeholder { display: none; }
-
-  .field { margin-bottom: 16px; }
-
-  .field:last-child { margin-bottom: 0; }
-
-  .field label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--gray-700);
-    margin-bottom: 6px;
-  }
-
-  .field label .hint { font-weight: 400; color: var(--gray-400); font-size: 12px; }
-
-  .field input[type="text"] {
+  .fld input[type="text"] {
     width: 100%;
     padding: 9px 12px;
-    border: 1.5px solid var(--gray-200);
-    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
     font-size: 14px;
     outline: none;
-    transition: border-color .15s;
+    background: var(--surface);
+    color: var(--text);
+    transition: border .15s;
   }
 
-  .field input[type="text"]:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+  .fld input[type="text"]:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
 
-  .lang-grid {
+  .lg {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     margin-top: 8px;
   }
 
-  .lang-grid button {
+  .lg button {
     padding: 5px 14px;
     border-radius: 20px;
     font-size: 13px;
     cursor: pointer;
-    border: 1.5px solid var(--gray-200);
-    background: #fff;
-    color: var(--gray-600);
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text2);
     transition: all .12s;
     font-family: inherit;
   }
 
-  .lang-grid button:hover { border-color: var(--primary); color: var(--primary); }
+  .lg button:hover { border-color: var(--primary); color: var(--primary); }
+  .lg button.sel { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-  .lang-grid button.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
-
-  .actions {
+  .acts {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    margin-top: 4px;
+    margin-top: 8px;
   }
 
   .btn {
     padding: 9px 22px;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -269,47 +285,39 @@
     align-items: center;
     gap: 6px;
     text-decoration: none;
+    white-space: nowrap;
   }
 
   .btn:active { transform: scale(.97); }
+  .btn-p { background: var(--primary); color: #fff; }
+  .btn-p:hover { background: var(--primary-hover); }
+  .btn-p:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-p:disabled:active { transform: none; }
+  .btn-s { background: var(--success); color: #fff; }
+  .btn-s:hover { background: #047857; }
+  .btn-s:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-s:disabled:active { transform: none; }
+  .btn-g { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+  .btn-g:hover { background: var(--surface2); }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
 
-  .btn-primary { background: var(--primary); color: #fff; }
-
-  .btn-primary:hover { background: var(--primary-dark); box-shadow: var(--shadow-lg); }
-
-  .btn-primary:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
-
-  .btn-primary:disabled:active { transform: none; }
-
-  .btn-success { background: var(--success); color: #fff; }
-
-  .btn-success:hover { background: #047857; box-shadow: var(--shadow-lg); }
-
-  .btn-success:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
-
-  .btn-success:disabled:active { transform: none; }
-
-  .status {
+  .st {
     display: none;
     margin-top: 12px;
     padding: 12px 16px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     font-size: 14px;
     line-height: 1.6;
   }
 
-  .status.show { display: block; }
+  .st.sh { display: block; }
+  .st.lo { background: var(--primary-bg); color: var(--primary); border: 1px solid #c7d2fe; }
+  .st.ok { background: var(--success-bg); color: #065f46; border: 1px solid #a7f3d0; }
+  .st.er { background: var(--danger-bg); color: var(--danger); border: 1px solid #fecaca; }
 
-  .status.info { background: var(--primary-light); color: var(--primary-dark); border: 1px solid #c7d2fe; }
-
-  .status.ok { background: var(--success-light); color: #065f46; border: 1px solid #a7f3d0; }
-
-  .status.err { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
-
-  .status .spinner {
+  .st .sp {
     display: inline-block;
-    width: 16px;
-    height: 16px;
+    width: 16px; height: 16px;
     border: 2px solid #c7d2fe;
     border-top-color: var(--primary);
     border-radius: 50%;
@@ -318,239 +326,714 @@
     margin-right: 6px;
   }
 
+  .st .pb {
+    display: block;
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+
+  .st .pb .bar {
+    height: 100%;
+    width: 30%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+    border-radius: 2px;
+    animation: pb-indeterminate 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pb-indeterminate {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+
   @keyframes spin { to { transform: rotate(360deg); } }
+  .st .btn { margin-top: 8px; }
 
-  .status .btn { margin-top: 8px; }
+  .gc { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  /* History */
+  .he {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text3);
+  }
 
-  @media (max-width: 600px) {
-    .two-col { grid-template-columns: 1fr; }
+  .he svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: .5; }
+  .he p { font-size: 14px; }
+
+  .hl { display: flex; flex-direction: column; gap: 8px; }
+
+  .hi {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    transition: all .15s;
+  }
+
+  .hi:hover { border-color: var(--primary); cursor: pointer; }
+
+  .hi .hi-icon {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .hi .hi-icon svg { width: 18px; height: 18px; }
+  .hi .hi-icon.hix { background: var(--primary-bg); color: var(--primary); }
+  .hi .hi-icon.hig { background: var(--success-bg); color: var(--success); }
+  .hi .hi-icon.hie { background: var(--danger-bg); color: var(--danger); }
+
+  .hi .hb { flex: 1; min-width: 0; }
+  .hi .hb .htl { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .hi .hb .hm { font-size: 12px; color: var(--text3); line-height: 1.5; }
+  .hi .hb .hs { font-size: 12px; font-weight: 600; margin-top: 4px; }
+  .hi .hb .hs.ok { color: var(--success); }
+  .hi .hb .hs.er { color: var(--danger); }
+
+  .hi .htime {
+    font-size: 12px;
+    color: var(--text3);
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding-top: 2px;
+    cursor: pointer;
+  }
+
+  .hc {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .hc .hc-l { display: flex; align-items: center; gap: 8px; }
+  .hc .hc-l svg { width: 20px; height: 20px; color: var(--text2); }
+  .hc .count { font-size: 13px; color: var(--text2); }
+
+  .hd {
+    display: none;
+    margin-top: 8px;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  .hd.sh { display: block; }
+  .hd .dr { display: flex; gap: 8px; margin-bottom: 4px; }
+  .hd .dr:last-child { margin-bottom: 0; }
+  .hd .dl { color: var(--text3); width: 70px; flex-shrink: 0; }
+
+  @media (max-width: 640px) {
+    .gc { grid-template-columns: 1fr; }
+    .top { padding: 0; }
+    .top-inner { padding: 0 12px; gap: 10px; }
+    .logo { font-size: 16px; }
+    .tab { padding: 6px 10px; font-size: 13px; }
+    .main { padding: 20px 12px 40px; }
     .steps { flex-direction: column; }
-    nav { padding: 0 16px; gap: 16px; }
-    .main { padding: 20px 16px; }
-    nav .brand { font-size: 16px; }
+    .hi { flex-wrap: wrap; }
+    .hi .htime { width: 100%; padding-top: 0; }
   }
 </style>
 </head>
 <body>
 
-<nav>
-  <a class="brand" href="/"><span>&#127758;</span>Auto i18n</a>
-  <div class="nav-tabs">
-    <button class="nav-tab active" data-tab="extract">&#128229; 提取文案</button>
-    <button class="nav-tab" data-tab="generate">&#128230; 生成 JSON</button>
+<div class="top">
+  <div class="top-inner">
+  <a class="logo" href="/">
+    <svg viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+    Auto i18n
+  </a>
+  <div class="tabs">
+    <button class="tab" data-tab="extract">
+      <svg viewBox="0 0 20 20"><path d="M10 1a1 1 0 011 1v7h7a1 1 0 110 2h-7v7a1 1 0 11-2 0v-7H2a1 1 0 110-2h7V2a1 1 0 011-1z"/></svg>
+      提取
+    </button>
+    <button class="tab" data-tab="generate">
+      <svg viewBox="0 0 20 20"><path d="M7 16a1 1 0 01-.707-1.707l5-5a1 1 0 011.414 1.414l-5 5A1 1 0 017 16z"/><path d="M13 16a1 1 0 01-.707-1.707l2-2a1 1 0 011.414 1.414l-2 2A1 1 0 0113 16z"/><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm0 2h12v12H4V4z"/></svg>
+      生成
+    </button>
+    <button class="tab" data-tab="history">
+      <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/></svg>
+      历史
+      <span class="badge" id="hbadge" style="display:none">0</span>
+    </button>
   </div>
-</nav>
+  <div class="spacer"></div>
+  <button class="theme-btn" id="theme-btn" title="切换主题">
+    <svg viewBox="0 0 20 20" id="sun-icon"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+    <svg viewBox="0 0 20 20" id="moon-icon" style="display:none"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+  </button>
+  </div>
+</div>
 
 <div class="main">
 
-<div class="panel active" id="panel-extract">
-  <div class="panel-header">
+<!-- Extract -->
+<div class="panel" id="panel-extract">
+  <div class="panel-h">
     <h2>提取可翻译文案</h2>
-    <p>从源语言 JSON 中自动提取所有可翻译文案，生成 Excel 翻译模板</p>
+    <p>从源语言 JSON 中自动提取所有可翻译文案，生成 xlsx 翻译模板</p>
   </div>
 
-  <div class="steps">
-    <div class="step">上传 JSON 文件</div>
-    <div class="step">指定目标语言</div>
-    <div class="step">下载模板</div>
+  <div class="steps" id="wf-extract">
+    <div class="step active"><span class="num">1</span>上传 JSON 文件</div>
+    <div class="step"><span class="num">2</span>指定目标语言</div>
+    <div class="step"><span class="num">3</span>下载模板</div>
   </div>
 
   <div class="card">
-    <div class="field">
+    <div class="fld">
       <label>源语言 JSON</label>
-      <div class="drop-zone" id="drop-extract">
-        <div class="dz-placeholder">
-          <div class="dz-icon">&#128218;</div>
-          <div class="dz-title">点击或拖拽上传</div>
-          <div class="dz-sub">支持 .json 格式</div>
+      <div class="drop" id="drop-extract">
+        <div class="dp">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/><path d="M12 11v4h-2l3 3 3-3h-2v-4h-2z"/></svg>
+          <div class="dt">点击或拖拽上传</div>
+          <div class="ds">支持 .json 格式</div>
         </div>
-        <div class="dz-file">&#128196; <span id="extract-filename"></span></div>
+        <div class="df">
+          <div class="di">
+            <div class="nm"><svg viewBox="0 0 20 20" style="width:16px;height:16px;vertical-align:middle;margin-right:4px"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg><span id="extract-filename"></span></div>
+            <div class="sz" id="extract-filesize"></div>
+          </div>
+        </div>
       </div>
       <input type="file" id="extract-input" accept=".json" style="display:none">
     </div>
 
-    <div class="field">
-      <label>目标语言 <span class="hint">（翻译人员需要翻译的语言）</span></label>
+    <div class="fld">
+      <label>目标语言 <span class="ht">（翻译人员需要翻译的语言）</span>
+        <button class="btn-g btn-sm" id="edit-langs-btn" style="font-size:11px;margin-left:6px;vertical-align:middle">编辑列表</button>
+      </label>
       <input type="text" id="extract-langs" placeholder="例如: zh-CN, ja, ko">
-      <div class="lang-grid">
-        <button data-lang="zh-CN">zh-CN</button>
-        <button data-lang="ja">ja</button>
-        <button data-lang="ko">ko</button>
-        <button data-lang="fr">fr</button>
-        <button data-lang="de">de</button>
-        <button data-lang="es">es</button>
-        <button data-lang="pt">pt</button>
-        <button data-lang="ru">ru</button>
-        <button data-lang="th">th</button>
-        <button data-lang="vi">vi</button>
+      <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap" id="lang-groups"></div>
+      <div class="lg" id="lang-tags"></div>
+      <div id="lang-editor" style="display:none;margin-top:10px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border)">
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <input type="text" id="new-lang-input" placeholder="输入语言代码如 fr-CA" style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;outline:none;background:var(--surface);color:var(--text)">
+          <button class="btn btn-p btn-sm" id="add-lang-btn">添加</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px" id="lang-editor-list"></div>
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <button class="btn btn-g btn-sm" id="reset-langs-btn">恢复默认</button>
+          <button class="btn btn-g btn-sm" id="close-editor-btn">完成编辑</button>
+        </div>
       </div>
     </div>
 
-    <div class="actions">
-      <button class="btn btn-primary" id="extract-btn" disabled>生成 xlsx 模板</button>
+    <div class="acts">
+      <button class="btn btn-p" id="extract-btn" disabled>生成 xlsx 模板</button>
     </div>
-
-    <div class="status" id="extract-status"></div>
+    <div class="st" id="extract-status"></div>
   </div>
 </div>
 
+<!-- Generate -->
 <div class="panel" id="panel-generate">
-  <div class="panel-header">
+  <div class="panel-h">
     <h2>生成翻译 JSON</h2>
     <p>将翻译完成的 xlsx 回填到原始 JSON 结构，生成各语言 JSON 文件</p>
   </div>
 
-  <div class="steps">
-    <div class="step">上传翻译 xlsx</div>
-    <div class="step">上传原始 JSON</div>
-    <div class="step">下载 JSON</div>
+  <div class="steps" id="wf-generate">
+    <div class="step active"><span class="num">1</span>上传文件</div>
+    <div class="step"><span class="num">2</span>下载 JSON</div>
   </div>
 
   <div class="card">
-    <div class="two-col">
-      <div class="field">
+    <div class="gc">
+      <div class="fld">
         <label>翻译完成的 xlsx</label>
-        <div class="drop-zone" id="drop-xlsx">
-          <div class="dz-placeholder">
-            <div class="dz-icon">&#128202;</div>
-            <div class="dz-title">点击或拖拽上传</div>
-            <div class="dz-sub">支持 .xlsx 格式</div>
+        <div class="drop" id="drop-xlsx">
+          <div class="dp">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/><path d="M12 11v4h-2l3 3 3-3h-2v-4h-2z"/></svg>
+            <div class="dt">点击或拖拽上传</div>
+            <div class="ds">支持 .xlsx 格式</div>
           </div>
-          <div class="dz-file">&#128196; <span id="xlsx-filename"></span></div>
+          <div class="df">
+            <div class="di">
+              <div class="nm"><svg viewBox="0 0 20 20" style="width:16px;height:16px;vertical-align:middle;margin-right:4px"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg><span id="xlsx-filename"></span></div>
+              <div class="sz" id="xlsx-filesize"></div>
+            </div>
+          </div>
         </div>
         <input type="file" id="xlsx-input" accept=".xlsx" style="display:none">
       </div>
 
-      <div class="field">
+      <div class="fld">
         <label>原始 JSON</label>
-        <div class="drop-zone" id="drop-json">
-          <div class="dz-placeholder">
-            <div class="dz-icon">&#128218;</div>
-            <div class="dz-title">点击或拖拽上传</div>
-            <div class="dz-sub">支持 .json 格式</div>
+        <div class="drop" id="drop-json">
+          <div class="dp">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/><path d="M12 11v4h-2l3 3 3-3h-2v-4h-2z"/></svg>
+            <div class="dt">点击或拖拽上传</div>
+            <div class="ds">支持 .json 格式</div>
           </div>
-          <div class="dz-file">&#128196; <span id="json-filename"></span></div>
+          <div class="df">
+            <div class="di">
+              <div class="nm"><svg viewBox="0 0 20 20" style="width:16px;height:16px;vertical-align:middle;margin-right:4px"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg><span id="json-filename"></span></div>
+              <div class="sz" id="json-filesize"></div>
+            </div>
+          </div>
         </div>
         <input type="file" id="json-input" accept=".json" style="display:none">
       </div>
     </div>
 
-    <div class="actions">
-      <button class="btn btn-success" id="generate-btn" disabled>生成 JSON 文件</button>
+    <div class="acts">
+      <button class="btn btn-s" id="generate-btn" disabled>生成 JSON 文件</button>
     </div>
+    <div class="st" id="generate-status"></div>
+  </div>
+</div>
 
-    <div class="status" id="generate-status"></div>
+<!-- History -->
+<div class="panel" id="panel-history">
+  <div class="panel-h">
+    <h2>操作历史</h2>
+    <p>记录所有提取和生成操作的完成情况</p>
+  </div>
+
+  <div class="card">
+    <div class="hc">
+      <div class="hc-l">
+        <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/></svg>
+        <span class="count" id="hcount">共 0 条记录</span>
+      </div>
+      <button class="btn btn-g btn-sm" id="clear-btn" style="display:none">清空记录</button>
+    </div>
+    <div id="hcontainer"></div>
   </div>
 </div>
 
 </div>
 
 <script>
-// --- tab switching ---
-document.querySelectorAll('.nav-tab').forEach(btn => {
+// Theme
+const themeBtn = document.getElementById('theme-btn');
+const sunIcon = document.getElementById('sun-icon');
+const moonIcon = document.getElementById('moon-icon');
+
+function setTheme(dark) {
+  document.documentElement.classList.toggle('dark', dark);
+  sunIcon.style.display = dark ? 'none' : '';
+  moonIcon.style.display = dark ? '' : 'none';
+  localStorage.setItem('theme', dark ? 'dark' : 'light');
+}
+
+themeBtn.addEventListener('click', () => {
+  setTheme(!document.documentElement.classList.contains('dark'));
+});
+
+const saved = localStorage.getItem('theme');
+if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme:dark)').matches)) {
+  setTheme(true);
+}
+
+// Storage
+const SK = 'auto-i18n-history';
+function loadH() { try { return JSON.parse(localStorage.getItem(SK)) || []; } catch { return []; } }
+function saveH(h) { localStorage.setItem(SK, JSON.stringify(h)); updateBadge(); renderH(); }
+function addH(e) { const h = loadH(); h.unshift({ id: Date.now(), time: new Date().toLocaleString(), ...e }); saveH(h); }
+
+function updateBadge() {
+  const h = loadH();
+  const b = document.getElementById('hbadge');
+  if (h.length) { b.style.display = 'inline'; b.textContent = h.length; } else { b.style.display = 'none'; }
+}
+
+function fmtSize(b) {
+  if (!b) return '';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+
+function renderH() {
+  const h = loadH();
+  const c = document.getElementById('hcontainer');
+  document.getElementById('hcount').textContent = '共 ' + h.length + ' 条记录';
+  document.getElementById('clear-btn').style.display = h.length ? '' : 'none';
+
+  if (!h.length) {
+    c.innerHTML = '<div class="he"><svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/></svg><p>还没有操作记录</p></div>';
+    return;
+  }
+
+  c.innerHTML = '<div class="hl">' + h.map(item => {
+    const ix = item.type === 'extract';
+    const ic = item.status === 'error' ? 'hie' : (ix ? 'hix' : 'hig');
+    const st = item.status === 'error' ? '失败' : '已完成';
+    const sc = item.status === 'error' ? 'er' : 'ok';
+
+    let meta = '';
+    if (item.langs) meta += (ix ? '目标语言: ' : '生成语言: ') + item.langs + ' &middot; ';
+    if (item.count !== undefined) meta += (ix ? '提取 ' : '') + item.count + (ix ? ' 条' : ' 个语言') + ' &middot; ';
+    if (item.filesize) meta += fmtSize(item.filesize) + ' &middot; ';
+
+    let dd = '';
+    if (item.status !== 'error') {
+      dd += '<div class="dr"><span class="dl">操作类型</span>' + (ix ? '提取文案' : '生成 JSON') + '</div>';
+      dd += '<div class="dr"><span class="dl">源文件</span>' + (item.filename || '-') + '</div>';
+      if (item.langs) dd += '<div class="dr"><span class="dl">' + (ix ? '目标语言' : '生成语言') + '</span>' + item.langs + '</div>';
+      if (item.count !== undefined) dd += '<div class="dr"><span class="dl">' + (ix ? '文案数' : '语言数') + '</span>' + item.count + '</div>';
+    } else {
+      dd += '<div class="dr"><span class="dl">错误信息</span>' + (item.error || '未知错误') + '</div>';
+    }
+
+    return '<div class="hi" onclick="toggleHD(' + item.id + ')">' +
+      '<div class="hi-icon ' + ic + '">' +
+        (item.status === 'error'
+          ? '<svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"/></svg>'
+          : (ix
+            ? '<svg viewBox="0 0 20 20"><path d="M10 1a1 1 0 011 1v7h7a1 1 0 110 2h-7v7a1 1 0 11-2 0v-7H2a1 1 0 110-2h7V2a1 1 0 011-1z"/></svg>'
+            : '<svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg>')) +
+      '</div>' +
+      '<div class="hb">' +
+        '<div class="htl">' + (ix ? '提取文案' : '生成 JSON') + ' — ' + (item.filename || '未知文件') + '</div>' +
+        '<div class="hm">' + meta + '</div>' +
+        '<div class="hs ' + sc + '">' + st + '</div>' +
+        '<div class="hd" id="hd-' + item.id + '">' + dd + '</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">' +
+        '<div class="htime" onclick="event.stopPropagation();document.getElementById(\'hd-' + item.id + '\').classList.toggle(\'sh\')">' + item.time + '</div>' +
+        '<button class="btn btn-g btn-sm" onclick="event.stopPropagation();delH(' + item.id + ')" title="删除" style="padding:2px 6px;font-size:11px;line-height:1">&#10005;</button>' +
+      '</div>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+// Tab switching with URL routing
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('.tab[data-tab="' + tab + '"]').classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+  if (tab === 'history') renderH();
+}
+
+function navigateTo(path) {
+  const raw = path.replace(/^\//, '') || 'extract';
+  const valid = ['extract', 'generate', 'history'];
+  const target = valid.includes(raw) ? raw : 'extract';
+  history.pushState({ tab: target }, '', '/' + target);
+  switchTab(target);
+}
+
+document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    navigateTo('/' + btn.dataset.tab);
   });
 });
 
-// --- lang tags ---
-document.querySelectorAll('.lang-grid button').forEach(btn => {
-  btn.addEventListener('click', () => {
-    btn.classList.toggle('selected');
-    const selected = document.querySelectorAll('.lang-grid button.selected');
-    document.getElementById('extract-langs').value = Array.from(selected).map(b => b.dataset.lang).join(',');
-  });
+window.addEventListener('popstate', e => {
+  const tab = (e.state && e.state.tab) || 'extract';
+  switchTab(tab);
 });
 
-// --- drop zone helper ---
-function setupDropZone(dzId, inputId, nameId, cb) {
-  const dz = document.getElementById(dzId);
-  const inp = document.getElementById(inputId);
-  dz.addEventListener('click', () => inp.click());
-  inp.addEventListener('change', () => {
-    if (inp.files.length) {
-      dz.classList.add('has-file');
-      document.getElementById(nameId).textContent = inp.files[0].name;
-      cb();
-    }
+(function initRoute() {
+  const raw = window.location.pathname.replace(/^\//, '') || 'extract';
+  const valid = ['extract', 'generate', 'history'];
+  switchTab(valid.includes(raw) ? raw : 'extract');
+})();
+
+// Lang tags
+const LANG_STORAGE_KEY = 'auto-i18n-langs';
+let allLangs = [];
+let editMode = false;
+
+async function loadLangs() {
+  const saved = localStorage.getItem(LANG_STORAGE_KEY);
+  if (saved) {
+    try { allLangs = JSON.parse(saved); } catch { allLangs = []; }
+  }
+  if (!allLangs || !allLangs.length) {
+    try {
+      const r = await fetch('/api/langs');
+      const data = await r.json();
+      allLangs = data.map(l => ({ code: l.code, name: l.name || '' }));
+    } catch {}
+  }
+  renderLangs();
+}
+
+function saveLangsToStorage() {
+  localStorage.setItem(LANG_STORAGE_KEY, JSON.stringify(allLangs));
+}
+
+function renderLangs() {
+  const tagsEl = document.getElementById('lang-tags');
+  const groupsEl = document.getElementById('lang-groups');
+  const editList = document.getElementById('lang-editor-list');
+
+  tagsEl.innerHTML = allLangs.map(l =>
+    '<button data-lang="' + l.code + '" title="' + (l.name || '') + '">' + l.code + '</button>'
+  ).join('');
+
+  groupsEl.innerHTML =
+    '<button class="btn-g btn-sm" id="select-all-btn" style="font-size:11px">全选</button>' +
+    '<button class="btn-g btn-sm" id="clear-all-btn" style="font-size:11px;color:var(--danger)">清除</button>';
+
+  if (editList) {
+    editList.innerHTML = allLangs.map((l, i) =>
+      '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;font-size:13px">' +
+        '<span title="' + (l.name || '') + '">' + l.code + '</span>' +
+        '<button class="del-lang-btn" data-idx="' + i + '" style="border:none;background:none;cursor:pointer;color:var(--danger);font-size:14px;line-height:1;padding:0 2px">&times;</button>' +
+      '</span>'
+    ).join('');
+
+    document.querySelectorAll('.del-lang-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx);
+        allLangs.splice(idx, 1);
+        saveLangsToStorage();
+        renderLangs();
+      });
+    });
+  }
+
+  document.querySelectorAll('#lang-tags button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('sel');
+      updateLangs();
+    });
   });
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
-  dz.addEventListener('drop', e => {
-    e.preventDefault(); dz.classList.remove('dragover');
-    if (e.dataTransfer.files.length) {
-      inp.files = e.dataTransfer.files;
-      dz.classList.add('has-file');
-      document.getElementById(nameId).textContent = inp.files[0].name;
-      cb();
-    }
+
+  document.getElementById('select-all-btn').addEventListener('click', () => {
+    const allSel = document.querySelectorAll('#lang-tags button').length === document.querySelectorAll('#lang-tags button.sel').length;
+    document.querySelectorAll('#lang-tags button').forEach(b => b.classList.toggle('sel', !allSel));
+    document.getElementById('select-all-btn').textContent = allSel ? '全选' : '取消全选';
+    updateLangs();
+  });
+
+  document.getElementById('clear-all-btn').addEventListener('click', () => {
+    document.querySelectorAll('#lang-tags button.sel').forEach(b => b.classList.remove('sel'));
+    document.getElementById('select-all-btn').textContent = '全选';
+    updateLangs();
   });
 }
 
-function showStatus(id, type, html) {
+function updateLangs() {
+  document.getElementById('extract-langs').value = Array.from(document.querySelectorAll('#lang-tags button.sel')).map(b => b.dataset.lang).join(',');
+}
+
+// Editor toggle
+document.getElementById('edit-langs-btn').addEventListener('click', () => {
+  editMode = !editMode;
+  document.getElementById('lang-editor').style.display = editMode ? 'block' : 'none';
+  document.getElementById('edit-langs-btn').textContent = editMode ? '关闭编辑' : '编辑列表';
+  if (editMode) renderLangs();
+});
+
+document.getElementById('close-editor-btn').addEventListener('click', () => {
+  editMode = false;
+  document.getElementById('lang-editor').style.display = 'none';
+  document.getElementById('edit-langs-btn').textContent = '编辑列表';
+});
+
+document.getElementById('add-lang-btn').addEventListener('click', () => {
+  const inp = document.getElementById('new-lang-input');
+  const code = inp.value.trim();
+  if (!code) return;
+  if (allLangs.some(l => l.code === code)) {
+    inp.value = '';
+    return;
+  }
+  allLangs.push({ code: code, name: '' });
+  saveLangsToStorage();
+  inp.value = '';
+  renderLangs();
+});
+
+document.getElementById('new-lang-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('add-lang-btn').click();
+});
+
+document.getElementById('reset-langs-btn').addEventListener('click', async () => {
+  localStorage.removeItem(LANG_STORAGE_KEY);
+  try {
+    const r = await fetch('/api/langs');
+    const data = await r.json();
+    allLangs = data.map(l => ({ code: l.code, name: l.name || '' }));
+  } catch {}
+  saveLangsToStorage();
+  renderLangs();
+});
+
+// Drop zone
+function setupDZ(dzId, inpId, nmId, szId, cb) {
+  const dz = document.getElementById(dzId);
+  const inp = document.getElementById(inpId);
+  dz.addEventListener('click', () => inp.click());
+  inp.addEventListener('change', onF);
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('dragover'); if (e.dataTransfer.files.length) { inp.files = e.dataTransfer.files; onF(); } });
+  dz.addEventListener('touchmove', e => { e.preventDefault(); dz.classList.add('dragover'); }, { passive: false });
+  dz.addEventListener('touchend', e => {
+    dz.classList.remove('dragover');
+    if (e.changedTouches.length) {
+      const touch = e.changedTouches[0];
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (el && (el === dz || dz.contains(el))) {
+        inp.click();
+      }
+    }
+  });
+  function onF() {
+    if (inp.files.length) {
+      dz.classList.add('has-file');
+      document.getElementById(nmId).textContent = inp.files[0].name;
+      document.getElementById(szId).textContent = fmtSize(inp.files[0].size);
+      cb();
+    }
+  }
+}
+
+function showSt(id, type, html) {
   const el = document.getElementById(id);
-  el.className = 'status show ' + type;
+  el.className = 'st sh ' + type;
   el.innerHTML = html;
 }
 
-// --- extract ---
-setupDropZone('drop-extract', 'extract-input', 'extract-filename', updateExtract);
-document.getElementById('extract-langs').addEventListener('input', updateExtract);
-function updateExtract() {
+function setWF(barId, step) {
+  document.querySelectorAll('#' + barId + ' .step').forEach((s, i) => {
+    s.classList.remove('active', 'done');
+    if (i + 1 === step) s.classList.add('active');
+    else if (i + 1 < step) s.classList.add('done');
+  });
+}
+
+// Extract
+setupDZ('drop-extract', 'extract-input', 'extract-filename', 'extract-filesize', updE);
+document.getElementById('extract-langs').addEventListener('input', updE);
+
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    const btn = document.getElementById('extract-btn');
+    if (!btn.disabled && document.getElementById('panel-extract').classList.contains('active')) btn.click();
+    const btn2 = document.getElementById('generate-btn');
+    if (!btn2.disabled && document.getElementById('panel-generate').classList.contains('active')) btn2.click();
+  }
+});
+
+function updE() {
   document.getElementById('extract-btn').disabled = !document.getElementById('extract-input').files.length;
+  if (document.getElementById('extract-input').files.length) setWF('wf-extract', 2);
 }
 
 document.getElementById('extract-btn').addEventListener('click', async () => {
   const btn = document.getElementById('extract-btn');
   btn.disabled = true;
-  showStatus('extract-status', 'info', '<span class="spinner"></span>正在提取文案...');
+  showSt('extract-status', 'lo', '<span class="sp"></span>正在提取文案...<div class="pb"><div class="bar"></div></div>');
+  const inp = document.getElementById('extract-input');
+  const fn = inp.files[0].name;
+  const fs = inp.files[0].size;
+  const ls = document.getElementById('extract-langs').value.trim();
   const fd = new FormData();
-  fd.append('file', document.getElementById('extract-input').files[0]);
-  fd.append('langs', document.getElementById('extract-langs').value);
+  fd.append('file', inp.files[0]);
+  fd.append('langs', ls);
   try {
     const r = await fetch('/api/extract', { method: 'POST', body: fd });
     if (!r.ok) throw new Error(await r.text());
+    const ct = r.headers.get('X-I18n-Count') || '-';
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);
-    const name = document.getElementById('extract-input').files[0].name.replace(/\.json$/i, '.xlsx');
-    showStatus('extract-status', 'ok', '&#9989; 提取成功<br><a href="' + url + '" download="' + name + '" class="btn btn-primary">&#11015; 下载 xlsx 模板</a>');
+    const nm = fn.replace(/\.json$/i, '.xlsx');
+    addH({ type: 'extract', filename: fn, langs: ls || '(未指定)', count: ct, filesize: fs, status: 'done' });
+    showSt('extract-status', 'ok', '&#10003; 提取成功<br><a href="' + url + '" download="' + nm + '" class="btn btn-p">&#8595; 下载 xlsx 模板</a>');
+    document.querySelectorAll('#wf-extract .step').forEach(s => s.classList.add('done'));
   } catch (e) {
-    showStatus('extract-status', 'err', '&#10060; ' + (e.message || '处理失败'));
+    addH({ type: 'extract', filename: fn, status: 'error', error: e.message });
+    showSt('extract-status', 'er', '&#10007; ' + (e.message || '处理失败'));
   } finally { btn.disabled = false; }
 });
 
-// --- generate ---
-setupDropZone('drop-xlsx', 'xlsx-input', 'xlsx-filename', updateGenerate);
-setupDropZone('drop-json', 'json-input', 'json-filename', updateGenerate);
-function updateGenerate() {
+// Generate
+setupDZ('drop-xlsx', 'xlsx-input', 'xlsx-filename', 'xlsx-filesize', updG);
+setupDZ('drop-json', 'json-input', 'json-filename', 'json-filesize', updG);
+function updG() {
   const a = document.getElementById('xlsx-input').files.length;
   const b = document.getElementById('json-input').files.length;
   document.getElementById('generate-btn').disabled = !(a && b);
+  if (a || b) setWF('wf-generate', 1);
 }
 
 document.getElementById('generate-btn').addEventListener('click', async () => {
   const btn = document.getElementById('generate-btn');
   btn.disabled = true;
-  showStatus('generate-status', 'info', '<span class="spinner"></span>正在生成 JSON...');
+  showSt('generate-status', 'lo', '<span class="sp"></span>正在生成 JSON...<div class="pb"><div class="bar"></div></div>');
+  const xf = document.getElementById('xlsx-input').files[0];
+  const jf = document.getElementById('json-input').files[0];
   const fd = new FormData();
-  fd.append('xlsx', document.getElementById('xlsx-input').files[0]);
-  fd.append('json', document.getElementById('json-input').files[0]);
+  fd.append('xlsx', xf);
+  fd.append('json', jf);
   try {
     const r = await fetch('/api/generate', { method: 'POST', body: fd });
     if (!r.ok) throw new Error(await r.text());
+    const ct = r.headers.get('X-I18n-Count') || '-';
+    const lg = r.headers.get('X-I18n-Langs') || '';
+    const comp = r.headers.get('X-I18n-Completion') || '';
+    const phwarn = r.headers.get('X-I18n-PH-Warn') || '';
+    let compHtml = '';
+    if (comp) {
+      compHtml = '<div style="font-size:12px;margin-top:4px">' + comp.split(',').map(c => {
+        const [lang, pct] = c.split(':');
+        const num = parseFloat(pct);
+        const icon = num >= 100 ? '&#10003;' : (num > 0 ? '&#9888;' : '&#10007;');
+        const color = num >= 100 ? '#059669' : (num > 0 ? '#d97706' : '#dc2626');
+        return '<span style="color:' + color + ';margin-right:10px">' + icon + ' ' + lang + ': ' + pct + '%</span>';
+      }).join('') + '</div>';
+    }
+    if (phwarn) {
+      compHtml += '<div style="font-size:12px;margin-top:4px;color:#dc2626">&#9888; 占位符不匹配: ' + phwarn.split(',').map(c => {
+        const [lang, n] = c.split(':');
+        return lang + '(' + n + '条)';
+      }).join(', ') + '</div>';
+    }
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);
-    const name = document.getElementById('json-input').files[0].name.replace(/\.json$/i, '_translations.zip');
-    showStatus('generate-status', 'ok', '&#9989; 生成成功<br><a href="' + url + '" download="' + name + '" class="btn btn-success">&#11015; 下载 JSON（ZIP）</a>');
+    const nm = jf.name.replace(/\.json$/i, '_translations.zip');
+    addH({ type: 'generate', filename: jf.name + ' + ' + xf.name, count: ct, langs: lg, filesize: jf.size + xf.size, status: 'done' });
+    showSt('generate-status', 'ok', '&#10003; 生成成功' + compHtml + '<br><a href="' + url + '" download="' + nm + '" class="btn btn-s">&#8595; 下载 JSON（ZIP）</a>');
+    document.querySelectorAll('#wf-generate .step').forEach(s => s.classList.add('done'));
   } catch (e) {
-    showStatus('generate-status', 'err', '&#10060; ' + (e.message || '处理失败'));
+    addH({ type: 'generate', filename: jf.name, status: 'error', error: e.message });
+    showSt('generate-status', 'er', '&#10007; ' + (e.message || '处理失败'));
   } finally { btn.disabled = false; }
 });
+
+// Clear
+document.getElementById('clear-btn').addEventListener('click', () => {
+  if (confirm('确定要清空所有操作历史记录吗？')) {
+    saveH([]);
+  }
+});
+
+function toggleHD(id) {
+  document.getElementById('hd-' + id).classList.toggle('sh');
+}
+
+function delH(id) {
+  const h = loadH();
+  saveH(h.filter(item => item.id !== id));
+}
+
+updateBadge();
+renderH();
+loadLangs();
 </script>
 </body>
 </html>

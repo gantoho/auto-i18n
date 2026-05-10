@@ -44,17 +44,23 @@ func (w *XLSXWriter) Write(sourceLang string, sourceValues []string, targetLangs
 		}
 	}
 
+	headerStyle, _ := f.NewStyle(&excelize.Style{
+		Font:      &excelize.Font{Bold: true, Color: "#ffffff"},
+		Fill:      excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{"#4f46e5"}},
+		Alignment: &excelize.Alignment{Horizontal: "center"},
+	})
+	evenStyle, _ := f.NewStyle(&excelize.Style{
+		Fill: excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{"#f8f9fc"}},
+	})
+
+	lastCol := mustColumnName(len(headers))
+
 	for i, h := range headers {
 		col, _ := excelize.ColumnNumberToName(i + 1)
 		cell := fmt.Sprintf("%s1", col)
 		f.SetCellValue(sheet, cell, h)
 	}
-
-	style, _ := f.NewStyle(&excelize.Style{
-		Font: &excelize.Font{Bold: true},
-	})
-	lastCol := mustColumnName(len(headers))
-	f.SetCellStyle(sheet, "A1", fmt.Sprintf("%s1", lastCol), style)
+	f.SetCellStyle(sheet, "A1", fmt.Sprintf("%s1", lastCol), headerStyle)
 
 	for rowIdx, val := range sourceValues {
 		rowNum := rowIdx + 2
@@ -66,10 +72,22 @@ func (w *XLSXWriter) Write(sourceLang string, sourceValues []string, targetLangs
 			}
 			f.SetCellStr(sheet, fmt.Sprintf("%s%d", col, rowNum), cellVal)
 		}
+		if rowIdx%2 == 1 {
+			cellRef := fmt.Sprintf("A%d", rowNum)
+			endRef := fmt.Sprintf("%s%d", lastCol, rowNum)
+			f.SetCellStyle(sheet, cellRef, endRef, evenStyle)
+		}
 	}
 
 	firstCol, _ := excelize.ColumnNumberToName(1)
 	f.SetColWidth(sheet, firstCol, lastCol, 30)
+
+	f.SetPanes(sheet, &excelize.Panes{
+		Freeze:      true,
+		YSplit:      1,
+		ActivePane:  "bottomLeft",
+		TopLeftCell: "A2",
+	})
 
 	return f.SaveAs(w.Path)
 }

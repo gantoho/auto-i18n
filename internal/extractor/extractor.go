@@ -18,10 +18,11 @@ var (
 		"_mail", "email",
 	}
 
-	urlRegex    = regexp.MustCompile(`^(https?://|/|\./|\.\./)`)
-	extRegex    = regexp.MustCompile(`\.\w+$`)
-	numberRegex = regexp.MustCompile(`^[+-]?\d*\.?\d+$`)
-	emailRegex  = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
+	urlRegex         = regexp.MustCompile(`^(https?://|/|\./|\.\./)`)
+	extRegex         = regexp.MustCompile(`\.\w+$`)
+	numberRegex      = regexp.MustCompile(`^[+-]?\d*\.?\d+$`)
+	emailRegex       = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
+	placeholderRegex = regexp.MustCompile(`\{[^}]+\}|%[dsfvebboxtT]|%[0-9]+\$[dsf]|\{\{[^}]+\}\}`)
 )
 
 type Extractor struct {
@@ -29,8 +30,9 @@ type Extractor struct {
 }
 
 type FlatEntry struct {
-	KeyPath string
-	Value   string
+	KeyPath         string
+	Value           string
+	HasPlaceholders bool
 }
 
 type ExtractResult struct {
@@ -104,9 +106,11 @@ func readValue(dec *json.Decoder, pathStack *[]string, entries *[]FlatEntry) err
 
 	case string:
 		if !isSkippableValue(tt) {
+			hasPH := placeholderRegex.MatchString(tt)
 			*entries = append(*entries, FlatEntry{
-				KeyPath: strings.Join(*pathStack, "."),
-				Value:   tt,
+				KeyPath:         strings.Join(*pathStack, "."),
+				Value:           tt,
+				HasPlaceholders: hasPH,
 			})
 		}
 	}
@@ -154,6 +158,14 @@ func readArray(dec *json.Decoder, pathStack *[]string, entries *[]FlatEntry) err
 
 	_, err := dec.Token()
 	return err
+}
+
+func ExtractPlaceholders(s string) []string {
+	matches := placeholderRegex.FindAllString(s, -1)
+	if matches == nil {
+		return []string{}
+	}
+	return matches
 }
 
 func isNonTranslatableKey(key string) bool {

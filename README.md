@@ -31,11 +31,11 @@
                     └──────────┬──────────────────┘
                                │
                                ▼
-                    ┌──────────────────────┐
-                    │  about_us.xlsx        │
-                    │  (翻译模板, 无 key)   │
-                    │  en │ cn │ ja │ ko   │
-                    └──────────┬───────────┘
+                    ┌──────────────────────────────────────────┐
+                    │  about_us.xlsx                            │
+                    │  (翻译模板, 无 key)                       │
+                    │  en │ Simplified Chinese │ Japanese │ Korean │
+                    └──────────────────┬───────────────────────┘
                                │
                                ▼
                     ┌──────────────────────┐
@@ -159,7 +159,7 @@ GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/auto-i18n-linux .
 执行提取命令：
 
 ```bash
-auto-i18n extract about_us_en.json -t zh-CN,ja,ko
+auto-i18n extract about_us_en.json -t "Simplified Chinese,Japanese,Korean"
 ```
 
 - 自动从文件名识别源语言为 `en`
@@ -168,8 +168,8 @@ auto-i18n extract about_us_en.json -t zh-CN,ja,ko
 
 生成的 Excel 表格（无 key_path 列，通过行顺序映射）：
 
-| en | zh-CN | ja | ko |
-|----|-------|----|----|
+| en | Simplified Chinese | Japanese | Korean |
+|----|-------------------|----------|--------|
 | Hello Banner | | | |
 | This is the about us banner content | | | |
 | Our Mission | | | |
@@ -182,8 +182,8 @@ auto-i18n extract about_us_en.json -t zh-CN,ja,ko
 
 将 xlsx 文件发给翻译人员，翻译人员直接用 Excel/WPS 打开，在各语言列中填写翻译内容。
 
-| en | zh-CN | ja | ko |
-|----|-------|----|----|
+| en | Simplified Chinese | Japanese | Korean |
+|----|-------------------|----------|--------|
 | Hello Banner | 你好横幅 | こんにちは | 안녕하세요 |
 | This is the about us banner content | 这是横幅内容 | ... | ... |
 | Our Mission | 我们的使命 | ... | ... |
@@ -198,10 +198,10 @@ auto-i18n generate about_us_en.xlsx
 ```
 
 程序自动：
-- 从 xlsx 表头读取语言列表（`en` 为源语言，`zh-CN`、`ja`、`ko` 为目标语言）
+- 从 xlsx 表头读取语言列表（`en` 为源语言，`Simplified Chinese`、`Japanese`、`Korean` 为目标语言）
 - **自动在同目录寻找原始 JSON 文件**：优先找 `about_us_en_en.json`，再找 `about_us_en.json`
 - 重新从源 JSON 提取字段路径，按行位置一对一映射
-- 生成各语言 JSON 文件
+- 生成各语言 JSON 文件（文件名使用语言代码，如 `about_us_cn.json`）
 
 输出：
 
@@ -298,7 +298,8 @@ auto-i18n extract <json_file> [flags]
 | 参数 | 说明 |
 |------|------|
 | `<json_file>` | 源语言 JSON 文件路径（必需） |
-| `-t, --target-langs` | 目标语言列表，逗号分隔，如 `zh-CN,ja,ko` |
+| `-t, --target-langs` | 目标语言列表，逗号分隔，如 `Simplified Chinese,Japanese,Korean` |
+| `-s, --split-tags` | 拆分含 HTML 标签的文案为多段分别翻译（默认不拆分） |
 | `-h, --help` | 查看 extract 子命令帮助 |
 
 示例：
@@ -308,7 +309,10 @@ auto-i18n extract <json_file> [flags]
 auto-i18n extract home_en.json
 
 # 带目标语言列
-auto-i18n extract home_en.json -t zh-CN,ja,ko,fr,de
+auto-i18n extract home_en.json -t "Simplified Chinese,Japanese,Korean"
+
+# 拆分 HTML 标签文案
+auto-i18n extract home_en.json -t "Simplified Chinese" -s
 ```
 
 ### `generate`
@@ -418,6 +422,7 @@ auto-i18n completion fish > ~/.config/fish/completions/auto-i18n.fish
 |------|------|------|
 | `file` | file | 源语言 JSON 文件 |
 | `langs` | string | 目标语言，逗号分隔（可选） |
+| `splitTags` | string | 设为 `true` 时拆分含 HTML 标签的文案（可选） |
 
 **响应**：xlsx 文件下载（`Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`）。
 
@@ -479,11 +484,32 @@ email
 | `contact_ja.json` | ja |
 | `intro_fr.json` | fr |
 
-> 如果文件名末尾不是语言代码，程序也能正常工作，只是生成的 xlsx 中源语言列名会使用默认值。
+> 如果文件名末尾不是语言代码，程序也能正常工作，只是生成的 xlsx 中源语言列名会使用文件名的最后一段内容。
 
 ### 为什么 xlsx 中没有 key_path 列？
 
 从 v0.2 版本开始去掉了 key_path 列。程序通过**行顺序**建立映射关系——第 1 行数据对应 JSON 遍历的第 1 个文案，第 2 行对应第 2 个，以此类推。这样翻译人员看到的是更干净的表格，只需从左到右填写即可。
+
+### xlsx 中的语言列名为什么是英文全名而不是代码？
+
+xlsx 表头使用语言英文全名（如 `Simplified Chinese`、`Japanese`），方便翻译人员直接识别。生成 JSON 文件时，会自动将语言名称映射回代码作为文件名（如 `about_us_cn.json`、`about_us_ja.json`）。
+
+支持的语言及其映射关系：
+
+| 语言代码 | 英文全名 |
+|----------|----------|
+| `cn` | Simplified Chinese |
+| `tw` | Traditional Chinese |
+| `jp` | Japanese |
+| `kr` | Korean |
+| `fr` | French |
+| `de` | German |
+| `ru` | Russian |
+| ... | ... |
+
+完整列表请查看 [lang.go](internal/lang/lang.go)。
+
+如果传入的代码不在支持列表中（如 `en`），会原样保留不变。
 
 ### 如果源 JSON 更新了，之前翻译过的内容怎么处理？
 

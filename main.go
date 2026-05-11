@@ -94,6 +94,11 @@ func runExtract(jsonPath string) error {
 		}
 	}
 
+	nameLangs := make([]string, len(langs))
+	for i, l := range langs {
+		nameLangs[i] = api.CodeToName(l)
+	}
+
 	xlsxPath := strings.TrimSuffix(jsonPath, filepath.Ext(jsonPath)) + ".xlsx"
 	values := make([]string, len(result.Entries))
 	for i, e := range result.Entries {
@@ -102,11 +107,11 @@ func runExtract(jsonPath string) error {
 
 	writer := xlsx.NewWriter(xlsxPath)
 	if result.SplitMeta != nil {
-		if err := writer.WriteWithMeta(result.SourceLang, values, langs, result.SplitMeta); err != nil {
+		if err := writer.WriteWithMeta(result.SourceLang, values, nameLangs, result.SplitMeta); err != nil {
 			return fmt.Errorf("write xlsx failed: %w", err)
 		}
 	} else {
-		if err := writer.Write(result.SourceLang, values, langs); err != nil {
+		if err := writer.Write(result.SourceLang, values, nameLangs); err != nil {
 			return fmt.Errorf("write xlsx failed: %w", err)
 		}
 	}

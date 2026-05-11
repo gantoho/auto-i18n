@@ -1,10 +1,11 @@
 package xlsx
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"auto_i18n/internal/tagsplit"
 )
 
 func TestWriteAndRead(t *testing.T) {
@@ -69,8 +70,8 @@ func TestWriteAndReadWithMeta(t *testing.T) {
 	sourceLang := "en"
 	sourceValues := []string{"hello", "world"}
 	targetLangs := []string{"zh-CN"}
-	splitMeta := map[string][]string{
-		"banner.content": {"<span>", "</span>", ""},
+	splitMeta := map[string]tagsplit.SplitMetaEntry{
+		"banner.content": {Template: []string{"<span>", "</span>", ""}, SegCount: 2},
 	}
 
 	writer := NewWriter(path)
@@ -96,19 +97,22 @@ func TestWriteAndReadWithMeta(t *testing.T) {
 		t.Fatal("SplitMeta should not be nil")
 	}
 
-	tmpl, ok := data.SplitMeta["banner.content"]
+	m, ok := data.SplitMeta["banner.content"]
 	if !ok {
 		t.Fatal("SplitMeta missing key banner.content")
 	}
 
 	expectedTmpl := []string{"<span>", "</span>", ""}
-	if len(tmpl) != len(expectedTmpl) {
-		t.Fatalf("Template length = %d, want %d", len(tmpl), len(expectedTmpl))
+	if len(m.Template) != len(expectedTmpl) {
+		t.Fatalf("Template length = %d, want %d", len(m.Template), len(expectedTmpl))
 	}
-	for i, v := range tmpl {
+	for i, v := range m.Template {
 		if v != expectedTmpl[i] {
 			t.Errorf("Template[%d] = %q, want %q", i, v, expectedTmpl[i])
 		}
+	}
+	if m.SegCount != 2 {
+		t.Errorf("SegCount = %d, want 2", m.SegCount)
 	}
 }
 
@@ -209,8 +213,8 @@ func TestReadSplitMetaInvalidJSON(t *testing.T) {
 	path := filepath.Join(dir, "badmeta.xlsx")
 
 	writer := NewWriter(path)
-	if err := writer.WriteWithMeta("en", []string{"a"}, []string{"zh-CN"}, map[string][]string{
-		"key": {"val"},
+	if err := writer.WriteWithMeta("en", []string{"a"}, []string{"zh-CN"}, map[string]tagsplit.SplitMetaEntry{
+		"key": {Template: []string{"val"}},
 	}); err != nil {
 		t.Fatalf("WriteWithMeta error: %v", err)
 	}
@@ -221,12 +225,10 @@ func TestReadSplitMetaInvalidJSON(t *testing.T) {
 		t.Fatalf("Read error: %v", err)
 	}
 
-	metaJSON, _ := json.Marshal(map[string][]string{"key": {"val"}})
 	if data.SplitMeta == nil {
 		t.Fatal("SplitMeta should not be nil")
 	}
-	if data.SplitMeta["key"][0] != "val" {
+	if data.SplitMeta["key"].Template[0] != "val" {
 		t.Errorf("SplitMeta key = %v, want [val]", data.SplitMeta["key"])
 	}
-	_ = metaJSON
 }

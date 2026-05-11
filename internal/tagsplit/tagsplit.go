@@ -12,6 +12,11 @@ type SplitInfo struct {
 	Template []string `json:"template"`
 }
 
+type SplitMetaEntry struct {
+	Template []string `json:"t"`
+	SegCount int      `json:"n"`
+}
+
 func HasTags(s string) bool {
 	return tagRegex.MatchString(s)
 }

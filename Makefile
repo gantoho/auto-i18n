@@ -3,13 +3,21 @@ BINARY_NAME := auto-i18n
 GO := go
 LDFLAGS := -ldflags="-s -w"
 
+ifeq ($(OS),Windows_NT)
+BINARY_EXT := .exe
+else
+BINARY_EXT :=
+endif
+
 .PHONY: all build build-all clean test help
 
 all: build
 
+build: export GOOS=$(shell go env GOHOSTOS)
+build: export GOARCH=$(shell go env GOHOSTARCH)
 build:
 	@echo "Building $(BINARY_NAME)..."
-	$(GO) build -o $(BINARY_DIR)/$(BINARY_NAME)$(shell go env GOEXE) .
+	$(GO) build -o $(BINARY_DIR)/$(BINARY_NAME)$(BINARY_EXT) .
 
 build-all: build-windows build-linux build-linux-arm64 build-macos build-macos-arm64
 

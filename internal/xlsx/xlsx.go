@@ -6,6 +6,8 @@ import (
 	"os"
 
 	"github.com/xuri/excelize/v2"
+
+	"auto_i18n/internal/tagsplit"
 )
 
 type XLSXReader struct {
@@ -20,7 +22,7 @@ type SheetData struct {
 	SourceLang  string
 	TargetLangs []string
 	Rows        [][]string
-	SplitMeta   map[string][]string
+	SplitMeta   map[string]tagsplit.SplitMetaEntry
 }
 
 func NewWriter(path string) *XLSXWriter {
@@ -35,7 +37,7 @@ func (w *XLSXWriter) Write(sourceLang string, sourceValues []string, targetLangs
 	return w.WriteWithMeta(sourceLang, sourceValues, targetLangs, nil)
 }
 
-func (w *XLSXWriter) WriteWithMeta(sourceLang string, sourceValues []string, targetLangs []string, splitMeta map[string][]string) error {
+func (w *XLSXWriter) WriteWithMeta(sourceLang string, sourceValues []string, targetLangs []string, splitMeta map[string]tagsplit.SplitMetaEntry) error {
 	os.Remove(w.Path)
 
 	f := excelize.NewFile()
@@ -149,7 +151,7 @@ func (r *XLSXReader) Read() (*SheetData, error) {
 	return data, nil
 }
 
-func readSplitMeta(f *excelize.File) map[string][]string {
+func readSplitMeta(f *excelize.File) map[string]tagsplit.SplitMetaEntry {
 	sheets := f.GetSheetList()
 	hasMeta := false
 	for _, s := range sheets {
@@ -167,7 +169,7 @@ func readSplitMeta(f *excelize.File) map[string][]string {
 		return nil
 	}
 
-	var meta map[string][]string
+	var meta map[string]tagsplit.SplitMetaEntry
 	if err := json.Unmarshal([]byte(val), &meta); err != nil {
 		return nil
 	}

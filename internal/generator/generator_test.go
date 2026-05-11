@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"auto_i18n/internal/extractor"
+	"auto_i18n/internal/tagsplit"
 )
 
 func TestPlaceholderSetsEqual(t *testing.T) {
@@ -83,7 +84,7 @@ func TestExpandedEntryCount(t *testing.T) {
 	tests := []struct {
 		name    string
 		entries []extractor.FlatEntry
-		meta    map[string][]string
+		meta    map[string]tagsplit.SplitMetaEntry
 		want    int
 	}{
 		{
@@ -102,8 +103,8 @@ func TestExpandedEntryCount(t *testing.T) {
 				{KeyPath: "b"},
 				{KeyPath: "c"},
 			},
-			meta: map[string][]string{
-				"b": {"<span>", "</span>", ""}, // len 3 -> segCount = 2
+			meta: map[string]tagsplit.SplitMetaEntry{
+				"b": {Template: []string{"<span>", "</span>", ""}, SegCount: 2},
 			},
 			want: 4,
 		},
@@ -113,11 +114,11 @@ func TestExpandedEntryCount(t *testing.T) {
 				{KeyPath: "x"},
 				{KeyPath: "y"},
 			},
-			meta: map[string][]string{
-				"x": {"<br>", ""},          // segCount = 1
-				"y": {"<b>", "</b>", ""},   // segCount = 2
+			meta: map[string]tagsplit.SplitMetaEntry{
+				"x": {Template: []string{"<br>", ""}, SegCount: 2},
+				"y": {Template: []string{"<b>", "</b>", ""}, SegCount: 2},
 			},
-			want: 3,
+			want: 4,
 		},
 	}
 	for _, tt := range tests {

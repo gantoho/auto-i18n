@@ -87,15 +87,20 @@ func extractHandler(w http.ResponseWriter, r *http.Request) {
 		values[i] = e.Value
 	}
 
+	nameLangs := make([]string, len(langs))
+	for i, l := range langs {
+		nameLangs[i] = CodeToName(l)
+	}
+
 	xlsxPath := filepath.Join(tmpDir, strings.TrimSuffix(header.Filename, filepath.Ext(header.Filename))+".xlsx")
 	writer := xlsx.NewWriter(xlsxPath)
 	if result.SplitMeta != nil {
-		if err := writer.WriteWithMeta(result.SourceLang, values, langs, result.SplitMeta); err != nil {
+		if err := writer.WriteWithMeta(result.SourceLang, values, nameLangs, result.SplitMeta); err != nil {
 			http.Error(w, fmt.Sprintf("write xlsx: %v", err), http.StatusInternalServerError)
 			return
 		}
 	} else {
-		if err := writer.Write(result.SourceLang, values, langs); err != nil {
+		if err := writer.Write(result.SourceLang, values, nameLangs); err != nil {
 			http.Error(w, fmt.Sprintf("write xlsx: %v", err), http.StatusInternalServerError)
 			return
 		}

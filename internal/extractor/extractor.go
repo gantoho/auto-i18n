@@ -42,7 +42,7 @@ type FlatEntry struct {
 type ExtractResult struct {
 	SourceLang string
 	Entries    []FlatEntry
-	SplitMeta  map[string][]string
+	SplitMeta  map[string]tagsplit.SplitMetaEntry
 }
 
 func New(jsonPath string) *Extractor {
@@ -86,15 +86,17 @@ func (e *Extractor) Run() (*ExtractResult, error) {
 
 func (r *ExtractResult) applySplitTags() {
 	newEntries := make([]FlatEntry, 0, len(r.Entries))
-	meta := make(map[string][]string)
+	meta := make(map[string]tagsplit.SplitMetaEntry)
 
 	for _, entry := range r.Entries {
 		if tagsplit.HasTags(entry.Value) {
 			info := tagsplit.Split(entry.Value)
+			segCount := 0
 			for i, seg := range info.Segments {
 				if seg == "" {
 					continue
 				}
+				segCount++
 				newEntries = append(newEntries, FlatEntry{
 					KeyPath:         entry.KeyPath,
 					Value:           seg,
@@ -102,7 +104,10 @@ func (r *ExtractResult) applySplitTags() {
 					SubIndex:        i,
 				})
 			}
-			meta[entry.KeyPath] = info.Template
+			meta[entry.KeyPath] = tagsplit.SplitMetaEntry{
+				Template: info.Template,
+				SegCount: segCount,
+			}
 		} else {
 			newEntries = append(newEntries, entry)
 		}

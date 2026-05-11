@@ -9,6 +9,7 @@ import (
 	"github.com/tidwall/sjson"
 
 	"auto_i18n/internal/extractor"
+	"auto_i18n/internal/lang"
 	"auto_i18n/internal/tagsplit"
 	"auto_i18n/internal/xlsx"
 )
@@ -88,7 +89,7 @@ func (g *Generator) Run() error {
 		LangStats: make([]LangStats, 0, len(data.TargetLangs)),
 	}
 
-	for langIdx, lang := range data.TargetLangs {
+	for langIdx, langName := range data.TargetLangs {
 		modified := sourceStr
 		colIdx := langIdx + 1
 		count := 0
@@ -106,7 +107,7 @@ func (g *Generator) Run() error {
 
 		pct := float64(count) / float64(totalRows) * 100
 		stats := LangStats{
-			Lang:          lang,
+			Lang:          langName,
 			Total:         totalRows,
 			Translated:    count,
 			Missing:       totalRows - count,
@@ -115,9 +116,10 @@ func (g *Generator) Run() error {
 		}
 		g.Result.LangStats = append(g.Result.LangStats, stats)
 
-		outPath := g.buildOutputPath(lang)
+		code := lang.NameToCode(langName)
+		outPath := g.buildOutputPath(code)
 		if err := os.WriteFile(outPath, []byte(modified+"\n"), 0644); err != nil {
-			return fmt.Errorf("write json for %s: %w", lang, err)
+			return fmt.Errorf("write json for %s: %w", langName, err)
 		}
 
 		if count == totalRows {
@@ -143,12 +145,11 @@ func (g *Generator) Run() error {
 	return nil
 }
 
-func (g *Generator) expandedEntryCount(entries []extractor.FlatEntry, meta map[string][]string) int {
+func (g *Generator) expandedEntryCount(entries []extractor.FlatEntry, meta map[string]tagsplit.SplitMetaEntry) int {
 	count := 0
 	for _, e := range entries {
-		if _, ok := meta[e.KeyPath]; ok {
-			tmpl := meta[e.KeyPath]
-			count += len(tmpl) - 1
+		if m, ok := meta[e.KeyPath]; ok {
+			count += m.SegCount
 		} else {
 			count++
 		}
@@ -191,7 +192,7 @@ func (g *Generator) applyTranslations(modified string, data *xlsx.SheetData, ent
 	return modified, count, missingRows, phWarnings, nil
 }
 
-func (g *Generator) applyTranslationsSplit(modified string, data *xlsx.SheetData, entries []extractor.FlatEntry, splitMeta map[string][]string, langIdx, colIdx int) (string, int, []string, []string, error) {
+func (g *Generator) applyTranslationsSplit(modified string, data *xlsx.SheetData, entries []extractor.FlatEntry, splitMeta map[string]tagsplit.SplitMetaEntry, langIdx, colIdx int) (string, int, []string, []string, error) {
 	var err error
 	count := 0
 	missingRows := make([]string, 0)
@@ -199,9 +200,9 @@ func (g *Generator) applyTranslationsSplit(modified string, data *xlsx.SheetData
 
 	rowIdx := 0
 	for _, entry := range entries {
-		tmpl, isSplit := splitMeta[entry.KeyPath]
+		m, isSplit := splitMeta[entry.KeyPath]
 		if isSplit {
-			segCount := len(tmpl) - 1
+			segCount := m.SegCount
 			segments := make([]string, segCount)
 			allFilled := true
 
@@ -222,7 +223,7 @@ func (g *Generator) applyTranslationsSplit(modified string, data *xlsx.SheetData
 			}
 
 			if allFilled {
-				reassembled := tagsplit.Reassemble(segments, tmpl)
+				reassembled := tagsplit.Reassemble(segments, m.Template)
 				modified, err = sjson.Set(modified, entry.KeyPath, reassembled)
 				if err != nil {
 					return "", 0, nil, nil, fmt.Errorf("set value at %s: %w", entry.KeyPath, err)

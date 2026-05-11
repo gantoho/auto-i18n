@@ -299,6 +299,10 @@
   .btn-s:disabled:active { transform: none; }
   .btn-g { background: transparent; color: var(--text2); border: 1px solid var(--border); }
   .btn-g:hover { background: var(--surface2); }
+  .btn-d { background: var(--danger); color: #fff; }
+  .btn-d:hover { background: #b91c1c; }
+  .btn-d:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-d:disabled:active { transform: none; }
   .btn-sm { padding: 5px 12px; font-size: 12px; }
 
   .st {
@@ -400,15 +404,6 @@
   .hi .hb .hs.ok { color: var(--success); }
   .hi .hb .hs.er { color: var(--danger); }
 
-  .hi .htime {
-    font-size: 12px;
-    color: var(--text3);
-    white-space: nowrap;
-    flex-shrink: 0;
-    padding-top: 2px;
-    cursor: pointer;
-  }
-
   .hc {
     display: flex;
     justify-content: space-between;
@@ -445,7 +440,81 @@
     .main { padding: 20px 12px 40px; }
     .steps { flex-direction: column; }
     .hi { flex-wrap: wrap; }
-    .hi .htime { width: 100%; padding-top: 0; }
+  }
+
+  /* History item delete button */
+  .hi .hdel {
+    width: 30px; height: 30px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text3);
+    flex-shrink: 0;
+    margin-top: -2px;
+    transition: all .15s;
+  }
+
+  .hi .hdel:hover { background: var(--danger-bg); color: var(--danger); }
+  .hi .hdel svg { width: 16px; height: 16px; }
+
+  .hi .hb .htime2 {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 6px;
+  }
+
+  /* Dialog / Modal */
+  .dialog-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dialog-overlay.sh { display: flex; }
+
+  .dialog-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px 20px;
+    width: 380px;
+    max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,.15);
+    text-align: center;
+  }
+
+  .dialog-box .dialog-icon {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--danger-bg);
+    color: var(--danger);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+
+  .dialog-box .dialog-icon svg { width: 24px; height: 24px; }
+
+  .dialog-box h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .dialog-box p { font-size: 14px; color: var(--text2); margin-bottom: 20px; line-height: 1.5; }
+
+  .dialog-box .dialog-acts {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .dialog-box .dialog-acts button {
+    min-width: 80px;
   }
 </style>
 </head>
@@ -525,7 +594,7 @@
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2);user-select:none">
           <input type="checkbox" id="split-tags-check" style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)">
           拆分 HTML 标签文案
-          <span style="font-size:11px;color:var(--text3)">（将含标签的文案拆分为多段分别翻译）</span>
+          <span style="font-size:11px;color:var(--text3)">（将含标签的文案拆分为多段分别翻译，生成其他语言的 JSON 文件时，再组装回原始格式）</span>
         </label>
       </div>
       <div id="lang-editor" style="display:none;margin-top:10px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border)">
@@ -627,6 +696,21 @@
 
 </div>
 
+<!-- Dialog -->
+<div class="dialog-overlay" id="dialog-overlay">
+  <div class="dialog-box">
+    <div class="dialog-icon">
+      <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"/></svg>
+    </div>
+    <h3 id="dialog-title">确认删除</h3>
+    <p id="dialog-msg">确定要删除该记录吗？</p>
+    <div class="dialog-acts">
+      <button class="btn btn-g" id="dialog-cancel">取消</button>
+      <button class="btn btn-d" id="dialog-confirm">删除</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // Theme
 const themeBtn = document.getElementById('theme-btn');
@@ -713,11 +797,11 @@ function renderH() {
         '<div class="hm">' + meta + '</div>' +
         '<div class="hs ' + sc + '">' + st + '</div>' +
         '<div class="hd" id="hd-' + item.id + '">' + dd + '</div>' +
+        '<div class="htime2">' + item.time + '</div>' +
       '</div>' +
-      '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">' +
-        '<div class="htime" onclick="event.stopPropagation();document.getElementById(\'hd-' + item.id + '\').classList.toggle(\'sh\')">' + item.time + '</div>' +
-        '<button class="btn btn-g btn-sm" onclick="event.stopPropagation();delH(' + item.id + ')" title="删除" style="padding:2px 6px;font-size:11px;line-height:1">&#10005;</button>' +
-      '</div>' +
+      '<button class="hdel" onclick="event.stopPropagation();showDelDialog(' + item.id + ')" title="删除">' +
+        '<svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"/></svg>' +
+      '</button>' +
     '</div>';
   }).join('') + '</div>';
 }
@@ -1023,15 +1107,48 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   } finally { btn.disabled = false; }
 });
 
+// Dialog
+let dialogCallback = null;
+
+function showDialog(title, msg, cb) {
+  document.getElementById('dialog-title').textContent = title;
+  document.getElementById('dialog-msg').textContent = msg;
+  dialogCallback = cb;
+  document.getElementById('dialog-overlay').classList.add('sh');
+}
+
+function closeDialog() {
+  document.getElementById('dialog-overlay').classList.remove('sh');
+  dialogCallback = null;
+}
+
+document.getElementById('dialog-cancel').addEventListener('click', closeDialog);
+document.getElementById('dialog-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeDialog();
+});
+document.getElementById('dialog-confirm').addEventListener('click', function() {
+  if (dialogCallback) dialogCallback();
+  closeDialog();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeDialog();
+});
+
 // Clear
 document.getElementById('clear-btn').addEventListener('click', () => {
-  if (confirm('确定要清空所有操作历史记录吗？')) {
+  showDialog('清空所有记录', '确定要清空所有操作历史记录吗？此操作不可恢复。', function() {
     saveH([]);
-  }
+  });
 });
 
 function toggleHD(id) {
   document.getElementById('hd-' + id).classList.toggle('sh');
+}
+
+function showDelDialog(id) {
+  showDialog('删除记录', '确定要删除该条操作记录吗？', function() {
+    delH(id);
+  });
 }
 
 function delH(id) {

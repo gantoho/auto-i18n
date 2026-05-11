@@ -122,6 +122,10 @@ $env:GOOS="linux"; $env:GOARCH="amd64"; go build -ldflags="-s -w" -o dist/auto-i
 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/auto-i18n-linux .
 ```
 
+> **部署到 Linux 服务器时**：如果运行报错 `cannot execute binary file`，说明二进制架构与服务器不匹配。请在服务器上执行 `uname -m` 查看架构，然后选择对应的构建目标：
+> - `x86_64` → `make build-linux`（GOARCH=amd64）
+> - `aarch64` / `arm64` → `make build-linux-arm64`（GOARCH=arm64）
+
 `-ldflags="-s -w"` 可去掉调试符号，减小约 30% 体积。生成的二进制为静态编译，不依赖任何外部库，可直接在目标系统运行。
 
 ## 快速开始（命令行）

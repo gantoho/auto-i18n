@@ -12,28 +12,28 @@ type LangEntry struct {
 }
 
 var supportedLangs = []LangEntry{
-	{Code: "zh-CN", Name: "简体中文", Group: []string{"common", "asia"}},
-	{Code: "zh-TW", Name: "繁体中文", Group: []string{"common", "asia"}},
-	{Code: "ja", Name: "日本語", Group: []string{"common", "asia"}},
-	{Code: "ko", Name: "한국어", Group: []string{"common", "asia"}},
-	{Code: "en", Name: "English", Group: []string{"common"}},
-	{Code: "fr", Name: "Français", Group: []string{"common", "europe"}},
-	{Code: "de", Name: "Deutsch", Group: []string{"common", "europe"}},
-	{Code: "es", Name: "Español", Group: []string{"common", "europe"}},
-	{Code: "pt", Name: "Português", Group: []string{"europe"}},
-	{Code: "it", Name: "Italiano", Group: []string{"europe"}},
-	{Code: "ru", Name: "Русский", Group: []string{"europe"}},
-	{Code: "nl", Name: "Nederlands", Group: []string{"europe"}},
-	{Code: "pl", Name: "Polski", Group: []string{"europe"}},
-	{Code: "sv", Name: "Svenska", Group: []string{"europe"}},
-	{Code: "ar", Name: "العربية", Group: []string{"other"}},
-	{Code: "he", Name: "עברית", Group: []string{"other"}},
-	{Code: "th", Name: "ไทย", Group: []string{"asia", "other"}},
-	{Code: "vi", Name: "Tiếng Việt", Group: []string{"asia", "other"}},
-	{Code: "id", Name: "Bahasa Indonesia", Group: []string{"asia", "other"}},
-	{Code: "ms", Name: "Bahasa Melayu", Group: []string{"asia", "other"}},
-	{Code: "tr", Name: "Türkçe", Group: []string{"europe", "other"}},
-	{Code: "hi", Name: "हिन्दी", Group: []string{"asia", "other"}},
+	{Code: "ar", Name: "Arabic", Group: []string{"america", "other"}},       // 阿根廷
+	{Code: "bg", Name: "Bulgarian", Group: []string{"europe"}},              // 保加利亚
+	{Code: "cn", Name: "Simplified Chinese", Group: []string{"asia"}},       // 中文简体
+	{Code: "de", Name: "German", Group: []string{"europe"}},                 // 德国
+	{Code: "es", Name: "Spanish", Group: []string{"europe"}},                // 西班牙
+	{Code: "fa", Name: "Farsi", Group: []string{"asia", "other"}},           // 波斯语
+	{Code: "fr", Name: "French", Group: []string{"europe"}},                 // 法国
+	{Code: "id", Name: "Indonesian", Group: []string{"asia"}},               // 印尼
+	{Code: "in", Name: "Hindi", Group: []string{"asia"}},                    // 印度
+	{Code: "it", Name: "Italian", Group: []string{"europe"}},                // 意大利
+	{Code: "jp", Name: "Japanese", Group: []string{"asia"}},                 // 日本
+	{Code: "kr", Name: "Korean", Group: []string{"asia"}},                   // 韩国
+	{Code: "lv", Name: "Latvian", Group: []string{"europe"}},                // 拉脱维亚
+	{Code: "my", Name: "Malay", Group: []string{"asia"}},                    // 马来西亚
+	{Code: "nl", Name: "Dutch", Group: []string{"europe"}},                  // 荷兰
+	{Code: "pl", Name: "Polish", Group: []string{"europe"}},                 // 波兰
+	{Code: "pt", Name: "Portuguese", Group: []string{"europe"}},             // 葡萄牙
+	{Code: "ro", Name: "Romanian", Group: []string{"europe"}},               // 罗马尼亚
+	{Code: "ru", Name: "Russian", Group: []string{"europe"}},                // 俄罗斯
+	{Code: "th", Name: "Thai", Group: []string{"asia"}},                     // 泰国
+	{Code: "tw", Name: "Traditional Chinese", Group: []string{"asia"}},      // 中文繁体
+	{Code: "vn", Name: "Vietnamese", Group: []string{"asia"}},               // 越南
 }
 
 func langsHandler(w http.ResponseWriter, r *http.Request) {

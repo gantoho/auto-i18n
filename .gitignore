@@ -1,11 +1,9 @@
 # 编译输出
-auto-i18n.exe
-auto-i18n
-*.exe
+dist/
 *.out
 
 # 测试数据中的中间产物
-testdata/*.xlsx
+testdata/
 
 # IDE
 .idea/

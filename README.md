@@ -69,48 +69,57 @@
 ```bash
 git clone <your-repo-url>
 cd auto-i18n
-go build -o auto-i18n .
+go build -o dist/auto-i18n .
 ```
 
 需要 Go 1.21+。
+
+编译产物输出到 `dist/` 目录，由 `.gitignore` 统一忽略。
+
+### 使用 Makefile 构建（推荐）
+
+项目提供了 Makefile，封装了常用构建目标，无需记忆复杂的 `-o` 和交叉编译参数。
+
+> **Windows 用户**：如需使用 `make`，参考以下安装方式：
+> 1. 以管理员身份打开 PowerShell，执行 `Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))` 安装 Chocolatey
+> 2. 然后执行 `choco install make` 安装 make
+> 3. 完成后重启终端即可使用 `make` 命令
+
+```bash
+# 构建当前平台二进制
+make build
+
+# 构建所有平台
+make build-all
+
+# 运行测试
+make test
+
+# 清理构建产物
+make clean
+```
+
+所有编译产物统一输出到 `dist/` 目录。
 
 ### 交叉编译到其他平台
 
 Go 支持一键交叉编译，在 Windows 上即可编译出 Linux / macOS 版本。
 
-**Windows (PowerShell)：**
-
-```powershell
-# Linux (x86_64)
-$env:GOOS="linux"; $env:GOARCH="amd64"; go build -ldflags="-s -w" -o auto-i18n-linux .
-
-# Linux (ARM64)
-$env:GOOS="linux"; $env:GOARCH="arm64"; go build -ldflags="-s -w" -o auto-i18n-linux-arm64 .
-
-# macOS (Intel)
-$env:GOOS="darwin"; $env:GOARCH="amd64"; go build -ldflags="-s -w" -o auto-i18n-macos .
-
-# macOS (Apple Silicon)
-$env:GOOS="darwin"; $env:GOARCH="arm64"; go build -ldflags="-s -w" -o auto-i18n-macos-arm64 .
+```bash
+# 使用 Makefile（推荐，全平台通用）
+make build-all
 ```
 
-**Linux / macOS (bash)：**
+或手动指定：
+
+```powershell
+# Windows PowerShell（以 Linux amd64 为例）
+$env:GOOS="linux"; $env:GOARCH="amd64"; go build -ldflags="-s -w" -o dist/auto-i18n-linux .
+```
 
 ```bash
-# Linux (x86_64)
-GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o auto-i18n-linux .
-
-# Linux (ARM64)
-GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o auto-i18n-linux-arm64 .
-
-# macOS (Intel)
-GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o auto-i18n-macos .
-
-# macOS (Apple Silicon)
-GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o auto-i18n-macos-arm64 .
-
-# Windows (从 Linux/Mac 编译)
-GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o auto-i18n.exe .
+# Linux / macOS（以 Linux amd64 为例）
+GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/auto-i18n-linux .
 ```
 
 `-ldflags="-s -w"` 可去掉调试符号，减小约 30% 体积。生成的二进制为静态编译，不依赖任何外部库，可直接在目标系统运行。

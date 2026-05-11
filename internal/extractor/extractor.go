@@ -92,6 +92,9 @@ func (r *ExtractResult) applySplitTags() {
 		if tagsplit.HasTags(entry.Value) {
 			info := tagsplit.Split(entry.Value)
 			for i, seg := range info.Segments {
+				if seg == "" {
+					continue
+				}
 				newEntries = append(newEntries, FlatEntry{
 					KeyPath:         entry.KeyPath,
 					Value:           seg,

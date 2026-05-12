@@ -39,10 +39,11 @@ type RunResult struct {
 }
 
 type Generator struct {
-	XLSXPath  string
-	JSONPath  string
-	OutputDir string
-	Result    *RunResult
+	XLSXPath   string
+	JSONPath   string
+	OutputDir  string
+	DirPattern string
+	Result     *RunResult
 }
 
 func New(xlsxPath, jsonPath, outputDir string) *Generator {
@@ -309,11 +310,28 @@ func placeholderSetsEqual(a, b []string) bool {
 	return true
 }
 
-func (g *Generator) buildOutputPath(lang string) string {
+func (g *Generator) buildOutputPath(langCode string) string {
 	base := filepath.Base(g.JSONPath)
 	ext := filepath.Ext(base)
-	name := strings.TrimSuffix(base, ext)
-	parts := strings.Split(name, "_")
-	newName := strings.Join(parts[:len(parts)-1], "_") + "_" + lang + ext
-	return filepath.Join(g.OutputDir, newName)
+	sourceName := strings.TrimSuffix(base, ext)
+	parts := strings.Split(sourceName, "_")
+	name := strings.Join(parts[:len(parts)-1], "_")
+	if name == "" {
+		name = sourceName
+	}
+
+	pattern := g.DirPattern
+	if pattern == "" || !strings.Contains(pattern, "{lang}") {
+		pattern = "{name}_{lang}" + ext
+	}
+
+	result := pattern
+	result = strings.ReplaceAll(result, "{lang}", langCode)
+	result = strings.ReplaceAll(result, "{name}", name)
+	result = strings.ReplaceAll(result, "{source}", sourceName)
+	result = strings.ReplaceAll(result, "{ext}", ext)
+
+	outPath := filepath.Join(g.OutputDir, result)
+	os.MkdirAll(filepath.Dir(outPath), 0755)
+	return outPath
 }

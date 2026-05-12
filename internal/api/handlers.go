@@ -187,6 +187,7 @@ func generateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	gen := generator.New(xlsxPath, jsonPath, tmpDir)
+	gen.DirPattern = r.FormValue("dirPattern")
 	if err := gen.Run(); err != nil {
 		http.Error(w, fmt.Sprintf("generate: %v", err), http.StatusInternalServerError)
 		return
@@ -198,22 +199,25 @@ func generateHandler(w http.ResponseWriter, r *http.Request) {
 
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
-	files, _ := filepath.Glob(filepath.Join(tmpDir, prefix+"_*.json"))
-	for _, f := range files {
-		if f == jsonPath {
-			continue
+	filepath.Walk(tmpDir, func(path string, fi os.FileInfo, err error) error {
+		if err != nil || fi.IsDir() || path == jsonPath {
+			return nil
 		}
-		fi, _ := os.Stat(f)
-		if fi == nil {
-			continue
+		rel, _ := filepath.Rel(tmpDir, path)
+		if rel == filepath.Base(jsonPath) {
+			return nil
+		}
+		if !strings.HasSuffix(path, ".json") {
+			return nil
 		}
 		fh, _ := zip.FileInfoHeader(fi)
-		fh.Name = filepath.Base(f)
+		fh.Name = filepath.ToSlash(rel)
 		fh.Method = zip.Deflate
 		w, _ := zw.CreateHeader(fh)
-		data, _ := os.ReadFile(f)
+		data, _ := os.ReadFile(path)
 		w.Write(data)
-	}
+		return nil
+	})
 	zw.Close()
 
 	downloadName := prefix + "_translations.zip"

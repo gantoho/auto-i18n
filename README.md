@@ -426,7 +426,7 @@ auto-i18n completion fish > ~/.config/fish/completions/auto-i18n.fish
 
 **响应**：xlsx 文件下载（`Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`）。
 
-### `/api/generate`
+### `POST /api/generate`
 
 **请求格式**：`multipart/form-data`
 
@@ -434,7 +434,11 @@ auto-i18n completion fish > ~/.config/fish/completions/auto-i18n.fish
 |------|------|------|
 | `xlsx` | file | 翻译完成的 xlsx 文件 |
 | `json` | file | 原始 JSON 文件 |
+| `dirPattern` | string | 输出路径模式，支持 `{lang}` `{name}` `{source}` `{ext}` 变量（可选） |
 
+**示例**：`dirPattern={lang}/translate/{name}_{lang}.json` → ZIP 中路径为 `ar/translate/about_us_ar.json`
+
+**响应头**：
 **响应**：ZIP 包下载（内含各语言 JSON 文件）。
 
 ## 自动过滤规则

@@ -27,6 +27,7 @@ var (
 	jsonPathFlag string
 	splitTags    bool
 	stripTags    bool
+	dirPattern   string
 )
 
 var rootCmd = &cobra.Command{
@@ -174,6 +175,7 @@ var generateCmd = &cobra.Command{
 		}
 
 		gen := generator.New(xlsxPath, jsonPath, outDir)
+		gen.DirPattern = dirPattern
 		if err := gen.Run(); err != nil {
 			return fmt.Errorf("generate failed: %w", err)
 		}
@@ -260,6 +262,8 @@ func init() {
 		"JSON 输出目录 (默认与 xlsx 同目录)")
 	generateCmd.Flags().StringVarP(&jsonPathFlag, "json", "j", "",
 		"原始 JSON 文件路径 (默认自动查找)")
+	generateCmd.Flags().StringVarP(&dirPattern, "dir-pattern", "d", "",
+		"JSON 输出目录模式，支持 {lang} {name} {source} {ext} 变量 (默认 {name}_{lang}{ext})")
 
 	serverCmd.Flags().IntVarP(&serverPort, "port", "p", 8080,
 		"服务端口号")

@@ -677,6 +677,11 @@
     </div>
 
     <div class="acts">
+      <div style="flex:1;display:flex;align-items:center;gap:8px">
+        <label style="font-size:12px;color:var(--text2);white-space:nowrap">输出路径:</label>
+        <input type="text" id="dir-pattern-input" placeholder="{lang}/{name}_{lang}.json" style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;outline:none;background:var(--surface);color:var(--text);max-width:300px"
+          title="支持变量: {lang} {name} {source} {ext}">
+      </div>
       <button class="btn btn-s" id="generate-btn" disabled>生成 JSON 文件</button>
     </div>
     <div class="st" id="generate-status"></div>
@@ -1104,6 +1109,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   const fd = new FormData();
   fd.append('xlsx', xf);
   fd.append('json', jf);
+  fd.append('dirPattern', document.getElementById('dir-pattern-input').value.trim());
   try {
     const r = await fetch('/api/generate', { method: 'POST', body: fd });
     if (!r.ok) throw new Error(await r.text());

@@ -26,6 +26,7 @@ var (
 	serverPort   int
 	jsonPathFlag string
 	splitTags    bool
+	stripTags    bool
 )
 
 var rootCmd = &cobra.Command{
@@ -73,8 +74,13 @@ func runExtract(jsonPath string) error {
 		return fmt.Errorf("file not found: %s", jsonPath)
 	}
 
+	if splitTags && stripTags {
+		return fmt.Errorf("cannot use both --split-tags and --strip-tags at the same time")
+	}
+
 	ext := extractor.New(jsonPath)
 	ext.SplitTags = splitTags
+	ext.StripTags = stripTags
 	result, err := ext.Run()
 	if err != nil {
 		return fmt.Errorf("extract failed: %w", err)
@@ -247,6 +253,8 @@ func init() {
 		"目标语言列表，逗号分隔 (如 zh-CN,ja,ko)")
 	extractCmd.Flags().BoolVarP(&splitTags, "split-tags", "s", false,
 		"拆分含 HTML 标签的文案为多段分别翻译")
+	extractCmd.Flags().BoolVarP(&stripTags, "strip-tags", "", false,
+		"剔除 HTML 标签，只保留纯文本（与 --split-tags 互斥）")
 
 	generateCmd.Flags().StringVarP(&outputDir, "output-dir", "o", "",
 		"JSON 输出目录 (默认与 xlsx 同目录)")

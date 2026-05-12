@@ -46,6 +46,7 @@ func extractHandler(w http.ResponseWriter, r *http.Request) {
 
 	langsStr := strings.TrimSpace(r.FormValue("langs"))
 	splitTagsStr := r.FormValue("splitTags")
+	stripTagsStr := r.FormValue("stripTags")
 	var langs []string
 	if langsStr != "" {
 		for _, l := range strings.Split(langsStr, ",") {
@@ -71,6 +72,7 @@ func extractHandler(w http.ResponseWriter, r *http.Request) {
 
 	ext := extractor.New(jsonPath)
 	ext.SplitTags = splitTagsStr == "true"
+	ext.StripTags = stripTagsStr == "true"
 	result, err := ext.Run()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("extract: %v", err), http.StatusInternalServerError)

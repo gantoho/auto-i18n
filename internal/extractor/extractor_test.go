@@ -30,6 +30,74 @@ func TestDetectLangFromFilename(t *testing.T) {
 	}
 }
 
+func TestApplyStripTags(t *testing.T) {
+	tests := []struct {
+		name       string
+		entries    []FlatEntry
+		wantValues []string
+	}{
+		{
+			name: "strip tags from entry with span",
+			entries: []FlatEntry{
+				{KeyPath: "banner.content", Value: "<span style='color: red;'>Find the important updates</span> and adjustments on our platform."},
+			},
+			wantValues: []string{
+				"Find the important updates and adjustments on our platform.",
+			},
+		},
+		{
+			name: "strip br tag",
+			entries: []FlatEntry{
+				{KeyPath: "filter.lable", Value: "Filter <br>Date"},
+			},
+			wantValues: []string{
+				"Filter Date",
+			},
+		},
+		{
+			name: "no tags kept as-is",
+			entries: []FlatEntry{
+				{KeyPath: "nav.0.btn_text", Value: "Home"},
+				{KeyPath: "nav.1.btn_text", Value: "Client Notices"},
+			},
+			wantValues: []string{
+				"Home",
+				"Client Notices",
+			},
+		},
+		{
+			name: "multiple entries with and without tags",
+			entries: []FlatEntry{
+				{KeyPath: "a", Value: "plain"},
+				{KeyPath: "b", Value: "<b>bold text</b>"},
+				{KeyPath: "c", Value: "also plain"},
+			},
+			wantValues: []string{
+				"plain",
+				"bold text",
+				"also plain",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := &ExtractResult{
+				Entries: tt.entries,
+			}
+			result.applyStripTags()
+
+			values := make([]string, len(result.Entries))
+			for i, e := range result.Entries {
+				values[i] = e.Value
+			}
+
+			if !reflect.DeepEqual(values, tt.wantValues) {
+				t.Errorf("values mismatch\ngot:  %#v\nwant: %#v", values, tt.wantValues)
+			}
+		})
+	}
+}
+
 func TestIsNonTranslatableKey(t *testing.T) {
 	tests := []struct {
 		key  string

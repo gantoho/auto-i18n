@@ -6,6 +6,7 @@ import (
 )
 
 var tagRegex = regexp.MustCompile(`<[^>]+>`)
+var stripTagRegex = regexp.MustCompile(`<[^>]*>`)
 
 type SplitInfo struct {
 	Segments []string `json:"segments"`
@@ -20,6 +21,10 @@ type SplitMetaEntry struct {
 
 func HasTags(s string) bool {
 	return tagRegex.MatchString(s)
+}
+
+func StripHTML(s string) string {
+	return strings.TrimSpace(stripTagRegex.ReplaceAllString(s, ""))
 }
 
 func Split(s string) SplitInfo {

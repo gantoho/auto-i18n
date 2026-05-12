@@ -597,6 +597,13 @@
           <span style="font-size:11px;color:var(--text3)">（将含标签的文案拆分为多段分别翻译，生成其他语言的 JSON 文件时，再组装回原始格式）</span>
         </label>
       </div>
+      <div style="margin-top:4px;display:flex;align-items:center;gap:8px" id="strip-tags-row">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2);user-select:none">
+          <input type="checkbox" id="strip-tags-check" style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)">
+          剔除 HTML 标签，只保留纯文本
+          <span style="font-size:11px;color:var(--text3)">（删除所有 HTML 标签，翻译时只看到纯文本，生成其他语言的 JSON 文件时，也会剔除所有 HTML 标签）</span>
+        </label>
+      </div>
       <div id="lang-editor" style="display:none;margin-top:10px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border)">
         <div style="display:flex;gap:6px;margin-bottom:8px">
           <input type="text" id="new-lang-input" placeholder="输入语言代码如 fr-CA" style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;outline:none;background:var(--surface);color:var(--text)">
@@ -1025,6 +1032,29 @@ function updE() {
   if (document.getElementById('extract-input').files.length) setWF('wf-extract', 2);
 }
 
+const splitTagsCheck = document.getElementById('split-tags-check');
+const stripTagsCheck = document.getElementById('strip-tags-check');
+const stripTagsRow = document.getElementById('strip-tags-row');
+
+function toggleStripTagsVisibility() {
+  if (splitTagsCheck.checked) {
+    stripTagsRow.style.display = 'none';
+    stripTagsCheck.checked = false;
+  } else {
+    stripTagsRow.style.display = 'flex';
+  }
+}
+
+splitTagsCheck.addEventListener('change', toggleStripTagsVisibility);
+stripTagsCheck.addEventListener('change', () => {
+  if (stripTagsCheck.checked) {
+    splitTagsCheck.checked = false;
+    toggleStripTagsVisibility();
+  }
+});
+
+toggleStripTagsVisibility();
+
 document.getElementById('extract-btn').addEventListener('click', async () => {
   const btn = document.getElementById('extract-btn');
   btn.disabled = true;
@@ -1037,6 +1067,7 @@ document.getElementById('extract-btn').addEventListener('click', async () => {
   fd.append('file', inp.files[0]);
   fd.append('langs', ls);
   fd.append('splitTags', document.getElementById('split-tags-check').checked ? 'true' : '');
+  fd.append('stripTags', document.getElementById('strip-tags-check').checked ? 'true' : '');
   try {
     const r = await fetch('/api/extract', { method: 'POST', body: fd });
     if (!r.ok) throw new Error(await r.text());

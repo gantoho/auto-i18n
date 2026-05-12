@@ -32,6 +32,36 @@ func TestHasTags(t *testing.T) {
 	}
 }
 
+func TestStripHTML(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"plain text", "Hello World", "Hello World"},
+		{"span tag", "<span>hello</span>", "hello"},
+		{"span with attributes", "<span style='color: red;'>text</span>", "text"},
+		{"self-closing tag", "Line1<br>Line2", "Line1Line2"},
+		{"tag at start", "<br>Hello", "Hello"},
+		{"tag at end", "Hello<br>", "Hello"},
+		{"nested tags", "<div><span>text</span></div>", "text"},
+		{"no tags", "plain text only", "plain text only"},
+		{"empty string", "", ""},
+		{"only tags", "<br><br>", ""},
+		{"tag with trailing spaces", "  <span>hello</span>  ", "hello"},
+		{"multiple text nodes", "<b>bold</b> and <i>italic</i>", "bold and italic"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := StripHTML(tt.input)
+			if got != tt.want {
+				t.Errorf("StripHTML(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestSplit(t *testing.T) {
 	tests := []struct {
 		name     string

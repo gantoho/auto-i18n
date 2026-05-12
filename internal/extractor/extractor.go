@@ -30,6 +30,7 @@ var (
 type Extractor struct {
 	JSONPath  string
 	SplitTags bool
+	StripTags bool
 }
 
 type FlatEntry struct {
@@ -77,7 +78,9 @@ func (e *Extractor) Run() (*ExtractResult, error) {
 		Entries:    entries,
 	}
 
-	if e.SplitTags {
+	if e.StripTags {
+		result.applyStripTags()
+	} else if e.SplitTags {
 		result.applySplitTags()
 	}
 
@@ -119,6 +122,14 @@ func (r *ExtractResult) applySplitTags() {
 	r.Entries = newEntries
 	if len(meta) > 0 {
 		r.SplitMeta = meta
+	}
+}
+
+func (r *ExtractResult) applyStripTags() {
+	for i, entry := range r.Entries {
+		if tagsplit.HasTags(entry.Value) {
+			r.Entries[i].Value = tagsplit.StripHTML(entry.Value)
+		}
 	}
 }
 

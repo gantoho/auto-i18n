@@ -70,7 +70,7 @@
 
   .top-inner {
     width: 100%;
-    max-width: 720px;
+    max-width: 900px;
     padding: 0 24px;
     height: 60px;
     display: flex;
@@ -133,7 +133,7 @@
   .main {
     flex: 1;
     padding: 32px 24px 56px;
-    max-width: 720px;
+    max-width: 900px;
     width: 100%;
     margin: 0 auto;
   }
@@ -676,13 +676,34 @@
       </div>
     </div>
 
-    <div class="acts">
-      <div style="flex:1;display:flex;align-items:center;gap:8px">
+    <div class="acts" style="flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:200px">
         <label style="font-size:12px;color:var(--text2);white-space:nowrap">输出路径:</label>
-        <input type="text" id="dir-pattern-input" placeholder="{lang}/{name}_{lang}.json" style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;outline:none;background:var(--surface);color:var(--text);max-width:300px"
-          title="支持变量: {lang} {name} {source} {ext}">
+        <input type="text" id="dir-pattern-input" placeholder="{lang}/{name}_{lang}.json"
+          style="flex:1;padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;outline:none;background:var(--surface);color:var(--text);font-family:monospace"
+          title="点击下方变量按钮快速插入">
       </div>
       <button class="btn btn-s" id="generate-btn" disabled>生成 JSON 文件</button>
+      <div style="width:100%;display:flex;flex-direction:column;gap:4px;margin-top:4px;flex-wrap:wrap;">
+        <div style="flex:1">
+          <span style="font-size:11px;color:var(--text3)">变量:</span>
+          <button class="btn-g btn-sm dp-btn" data-var="{lang}" style="font-size:11px;font-family:monospace">{lang}</button>
+          <button class="btn-g btn-sm dp-btn" data-var="{name}" style="font-size:11px;font-family:monospace">{name}</button>
+          <button class="btn-g btn-sm dp-btn" data-var="{source}" style="font-size:11px;font-family:monospace">{source}</button>
+          <button class="btn-g btn-sm dp-btn" data-var="{ext}" style="font-size:11px;font-family:monospace">{ext}</button>
+        </div>
+        <div style="flex:1">
+          <span style="font-size:11px;color:var(--text3)">常用:</span>
+          <button class="btn-g btn-sm dp-btn" data-var="translate" style="font-size:11px">translate</button>
+          <button class="btn-g btn-sm dp-btn" data-var="locales" style="font-size:11px">locales</button>
+          <button class="btn-g btn-sm dp-btn" data-var="i18n" style="font-size:11px">i18n</button>
+          <button class="btn-g btn-sm dp-btn" data-var="/" style="font-size:11px">/</button>
+        </div>
+        <div style="flex:1">
+          <span style="font-size:11px;color:var(--text3)">预设:</span>
+          <button class="btn-g btn-sm dp-preset" data-pattern="{lang}/translate/{name}/{name}_{lang}{ext}" style="font-size:11px">按语言/子目录</button>
+        </div>
+      </div>
     </div>
     <div class="st" id="generate-status"></div>
   </div>
@@ -1143,6 +1164,30 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     addH({ type: 'generate', filename: jf.name, status: 'error', error: e.message });
     showSt('generate-status', 'er', '&#10007; ' + (e.message || '处理失败'));
   } finally { btn.disabled = false; }
+});
+
+// Dir pattern buttons - insert at cursor
+document.querySelectorAll('.dp-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const inp = document.getElementById('dir-pattern-input');
+    const val = btn.dataset.var;
+    const start = inp.selectionStart;
+    const end = inp.selectionEnd;
+    const before = inp.value.substring(0, start);
+    const after = inp.value.substring(end);
+    inp.value = before + val + after;
+    const pos = start + val.length;
+    inp.setSelectionRange(pos, pos);
+    inp.focus();
+  });
+});
+
+// Dir pattern preset — replace whole input value
+document.querySelectorAll('.dp-preset').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('dir-pattern-input').value = btn.dataset.pattern;
+    document.getElementById('dir-pattern-input').focus();
+  });
 });
 
 // Dialog

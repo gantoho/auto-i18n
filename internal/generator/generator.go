@@ -24,6 +24,24 @@ func jsonEncodeString(s string) string {
 	return strings.TrimSuffix(buf.String(), "\n")
 }
 
+func formatJSON(raw string) ([]byte, error) {
+	var data interface{}
+	if err := json.Unmarshal([]byte(raw), &data); err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(data); err != nil {
+		return nil, err
+	}
+	result := buf.Bytes()
+	result = bytes.TrimRight(result, "\n\r\t ")
+	result = append(result, '\n')
+	return result, nil
+}
+
 type LangStats struct {
 	Lang          string
 	Total         int
@@ -129,7 +147,11 @@ func (g *Generator) Run() error {
 
 		code := lang.NameToCode(langName)
 		outPath := g.buildOutputPath(code)
-		if err := os.WriteFile(outPath, []byte(modified+"\n"), 0644); err != nil {
+		formatted, err := formatJSON(modified)
+		if err != nil {
+			return fmt.Errorf("format json for %s: %w", langName, err)
+		}
+		if err := os.WriteFile(outPath, formatted, 0644); err != nil {
 			return fmt.Errorf("write json for %s: %w", langName, err)
 		}
 

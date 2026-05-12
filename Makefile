@@ -5,19 +5,20 @@ LDFLAGS := -ldflags="-s -w"
 
 ifeq ($(OS),Windows_NT)
 BINARY_EXT := .exe
+MKDIR_CMD := if not exist $(BINARY_DIR) mkdir $(BINARY_DIR)
 else
 BINARY_EXT :=
+MKDIR_CMD := mkdir -p $(BINARY_DIR)
 endif
 
 .PHONY: all build build-all clean test help
 
 all: build
 
-build: export GOOS=$(shell go env GOHOSTOS)
-build: export GOARCH=$(shell go env GOHOSTARCH)
 build:
 	@echo "Building $(BINARY_NAME)..."
-	$(GO) build -o $(BINARY_DIR)/$(BINARY_NAME)$(BINARY_EXT) .
+	@$(MKDIR_CMD)
+	$(GO) build $(LDFLAGS) -o $(BINARY_DIR)/$(BINARY_NAME)$(BINARY_EXT) .
 
 build-all: build-windows build-linux build-linux-arm64 build-macos build-macos-arm64
 
@@ -25,30 +26,35 @@ build-windows: export GOOS=windows
 build-windows: export GOARCH=amd64
 build-windows:
 	@echo "Building $(BINARY_NAME) for Windows (amd64)..."
+	@$(MKDIR_CMD)
 	$(GO) build $(LDFLAGS) -o $(BINARY_DIR)/$(BINARY_NAME).exe .
 
 build-linux: export GOOS=linux
 build-linux: export GOARCH=amd64
 build-linux:
 	@echo "Building $(BINARY_NAME) for Linux (amd64)..."
+	@$(MKDIR_CMD)
 	$(GO) build $(LDFLAGS) -o $(BINARY_DIR)/$(BINARY_NAME)-linux .
 
 build-linux-arm64: export GOOS=linux
 build-linux-arm64: export GOARCH=arm64
 build-linux-arm64:
 	@echo "Building $(BINARY_NAME) for Linux (arm64)..."
+	@$(MKDIR_CMD)
 	$(GO) build $(LDFLAGS) -o $(BINARY_DIR)/$(BINARY_NAME)-linux-arm64 .
 
 build-macos: export GOOS=darwin
 build-macos: export GOARCH=amd64
 build-macos:
 	@echo "Building $(BINARY_NAME) for macOS (amd64)..."
+	@$(MKDIR_CMD)
 	$(GO) build $(LDFLAGS) -o $(BINARY_DIR)/$(BINARY_NAME)-macos .
 
 build-macos-arm64: export GOOS=darwin
 build-macos-arm64: export GOARCH=arm64
 build-macos-arm64:
 	@echo "Building $(BINARY_NAME) for macOS (arm64)..."
+	@$(MKDIR_CMD)
 	$(GO) build $(LDFLAGS) -o $(BINARY_DIR)/$(BINARY_NAME)-macos-arm64 .
 
 clean:

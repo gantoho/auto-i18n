@@ -746,6 +746,19 @@
 </div>
 
 <script>
+// Global settings memory
+const SETTINGS_KEY = 'auto-i18n-settings';
+
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch { return {}; }
+}
+
+function saveSettingsPatch(patch) {
+  const s = loadSettings();
+  Object.assign(s, patch);
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+}
+
 // Theme
 const themeBtn = document.getElementById('theme-btn');
 const sunIcon = document.getElementById('sun-icon');
@@ -902,6 +915,7 @@ function renderLangs() {
   const tagsEl = document.getElementById('lang-tags');
   const groupsEl = document.getElementById('lang-groups');
   const editList = document.getElementById('lang-editor-list');
+  const savedSel = loadSettings().selectedLangs || [];
 
   tagsEl.innerHTML = allLangs.map(l =>
     '<button data-lang="' + l.code + '" title="' + (l.name || '') + '">' + l.code + '</button>'
@@ -930,11 +944,15 @@ function renderLangs() {
   }
 
   document.querySelectorAll('#lang-tags button').forEach(btn => {
+    if (savedSel.includes(btn.dataset.lang)) {
+      btn.classList.add('sel');
+    }
     btn.addEventListener('click', () => {
       btn.classList.toggle('sel');
       updateLangs();
     });
   });
+  updateLangs();
 
   document.getElementById('select-all-btn').addEventListener('click', () => {
     const allSel = document.querySelectorAll('#lang-tags button').length === document.querySelectorAll('#lang-tags button.sel').length;
@@ -951,7 +969,12 @@ function renderLangs() {
 }
 
 function updateLangs() {
-  document.getElementById('extract-langs').value = Array.from(document.querySelectorAll('#lang-tags button.sel')).map(b => b.dataset.lang).join(',');
+  const selected = document.querySelectorAll('#lang-tags button.sel');
+  const sel = Array.from(selected).map(b => b.dataset.lang);
+  if (selected.length) {
+    document.getElementById('extract-langs').value = sel.join(',');
+  }
+  saveSettingsPatch({ selectedLangs: sel });
 }
 
 // Editor toggle
@@ -1043,7 +1066,32 @@ function setWF(barId, step) {
 
 // Extract
 setupDZ('drop-extract', 'extract-input', 'extract-filename', 'extract-filesize', updE);
-document.getElementById('extract-langs').addEventListener('input', updE);
+
+// Extract langs input memory
+const langsInput = document.getElementById('extract-langs');
+langsInput.addEventListener('input', () => {
+  saveSettingsPatch({ extractLangs: langsInput.value });
+  updE();
+});
+
+// Split tags checkbox
+const splitTagsCheck = document.getElementById('split-tags-check');
+splitTagsCheck.addEventListener('change', () => {
+  if (splitTagsCheck.checked) {
+    stripTagsCheck.checked = false;
+    saveSettingsPatch({ stripTags: false });
+  }
+  saveSettingsPatch({ splitTags: splitTagsCheck.checked });
+  toggleStripTagsVisibility();
+});
+
+// Strip tags checkbox
+const stripTagsCheck = document.getElementById('strip-tags-check');
+const stripTagsRow = document.getElementById('strip-tags-row');
+stripTagsCheck.addEventListener('change', () => {
+  saveSettingsPatch({ stripTags: stripTagsCheck.checked });
+});
+toggleStripTagsVisibility();
 
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -1059,28 +1107,13 @@ function updE() {
   if (document.getElementById('extract-input').files.length) setWF('wf-extract', 2);
 }
 
-const splitTagsCheck = document.getElementById('split-tags-check');
-const stripTagsCheck = document.getElementById('strip-tags-check');
-const stripTagsRow = document.getElementById('strip-tags-row');
-
 function toggleStripTagsVisibility() {
   if (splitTagsCheck.checked) {
     stripTagsRow.style.display = 'none';
-    stripTagsCheck.checked = false;
   } else {
     stripTagsRow.style.display = 'flex';
   }
 }
-
-splitTagsCheck.addEventListener('change', toggleStripTagsVisibility);
-stripTagsCheck.addEventListener('change', () => {
-  if (stripTagsCheck.checked) {
-    splitTagsCheck.checked = false;
-    toggleStripTagsVisibility();
-  }
-});
-
-toggleStripTagsVisibility();
 
 document.getElementById('extract-btn').addEventListener('click', async () => {
   const btn = document.getElementById('extract-btn');
@@ -1179,6 +1212,7 @@ document.querySelectorAll('.dp-btn').forEach(btn => {
     const pos = start + val.length;
     inp.setSelectionRange(pos, pos);
     inp.focus();
+    saveSettingsPatch({ dirPattern: inp.value });
   });
 });
 
@@ -1186,8 +1220,14 @@ document.querySelectorAll('.dp-btn').forEach(btn => {
 document.querySelectorAll('.dp-preset').forEach(btn => {
   btn.addEventListener('click', () => {
     document.getElementById('dir-pattern-input').value = btn.dataset.pattern;
+    saveSettingsPatch({ dirPattern: btn.dataset.pattern });
     document.getElementById('dir-pattern-input').focus();
   });
+});
+
+// Dir pattern input memory
+document.getElementById('dir-pattern-input').addEventListener('input', () => {
+  saveSettingsPatch({ dirPattern: document.getElementById('dir-pattern-input').value });
 });
 
 // Dialog
@@ -1239,9 +1279,20 @@ function delH(id) {
   saveH(h.filter(item => item.id !== id));
 }
 
+// Centralized settings restore — runs once at page load
+function restoreSettings() {
+  const s = loadSettings();
+  if (s.extractLangs !== undefined) document.getElementById('extract-langs').value = s.extractLangs;
+  if (s.dirPattern !== undefined) document.getElementById('dir-pattern-input').value = s.dirPattern;
+  if (s.splitTags !== undefined) document.getElementById('split-tags-check').checked = s.splitTags;
+  if (s.stripTags !== undefined && !s.splitTags) document.getElementById('strip-tags-check').checked = s.stripTags;
+  toggleStripTagsVisibility();
+}
+
 updateBadge();
 renderH();
 loadLangs();
+restoreSettings();
 </script>
 </body>
 </html>

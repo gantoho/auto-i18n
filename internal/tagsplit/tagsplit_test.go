@@ -111,13 +111,13 @@ func TestReassemble(t *testing.T) {
 	}{
 		{
 			name:     "tag at start with trailing text",
-			segments: []string{"Find the important updates", " and adjustments on our platform."},
+			segments: []string{"", "Find the important updates", " and adjustments on our platform."},
 			template: []string{"<span style='color: red;'>", "</span>", ""},
 			want:     "<span style='color: red;'>Find the important updates</span> and adjustments on our platform.",
 		},
 		{
 			name:     "tag only no surrounding text",
-			segments: []string{"highlighted"},
+			segments: []string{"", "highlighted", ""},
 			template: []string{"<span>", "</span>", ""},
 			want:     "<span>highlighted</span>",
 		},
@@ -126,6 +126,30 @@ func TestReassemble(t *testing.T) {
 			segments: []string{"Hello World"},
 			template: []string{"", ""},
 			want:     "Hello World",
+		},
+		{
+			name:     "self closing tag",
+			segments: []string{"Line1", "Line2"},
+			template: []string{"<br>", ""},
+			want:     "Line1<br>Line2",
+		},
+		{
+			name:     "tag in middle",
+			segments: []string{"Hello ", "world", "!"},
+			template: []string{"<span>", "</span>", ""},
+			want:     "Hello <span>world</span>!",
+		},
+		{
+			name:     "multiple self closing tags",
+			segments: []string{"A", "B", "C"},
+			template: []string{"<br>", "<br>", ""},
+			want:     "A<br>B<br>C",
+		},
+		{
+			name:     "multiple sequential tags",
+			segments: []string{"", "bold", "", "italic", ""},
+			template: []string{"<b>", "</b>", "<i>", "</i>", ""},
+			want:     "<b>bold</b><i>italic</i>",
 		},
 	}
 

@@ -1,11 +1,14 @@
 package generator
 
 import (
+	"encoding/json"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"auto_i18n/internal/extractor"
 	"auto_i18n/internal/tagsplit"
+	"auto_i18n/internal/xlsx"
 )
 
 func TestPlaceholderSetsEqual(t *testing.T) {
@@ -127,6 +130,218 @@ func TestExpandedEntryCount(t *testing.T) {
 			got := g.expandedEntryCount(tt.entries, tt.meta)
 			if got != tt.want {
 				t.Errorf("expandedEntryCount = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestApplyTranslationsSplitWithIndices(t *testing.T) {
+	tests := []struct {
+		name       string
+		sourceJSON string
+		entries    []extractor.FlatEntry
+		splitMeta  map[string]tagsplit.SplitMetaEntry
+		rows       [][]string
+		langIdx    int
+		colIdx     int
+		wantValue  string
+		wantCount  int
+	}{
+		{
+			name:       "span tag at start with Indices",
+			sourceJSON: `{"banner":{"content":"<span style='color: red;'>Find the important updates</span> and adjustments on our platform."}}`,
+			entries: []extractor.FlatEntry{
+				{KeyPath: "banner.content", Value: "<span style='color: red;'>Find the important updates</span> and adjustments on our platform."},
+			},
+			splitMeta: map[string]tagsplit.SplitMetaEntry{
+				"banner.content": {
+					Template: []string{"<span style='color: red;'>", "</span>", ""},
+					SegCount: 2,
+					Indices:  []int{1, 2},
+				},
+			},
+			rows: [][]string{
+				{"<span style='color: red;'>Find the important updates</span> and adjustments on our platform.", "查看平台重要更新"},
+				{"<span style='color: red;'>Find the important updates</span> and adjustments on our platform.", "及调整信息。"},
+			},
+			langIdx:   0,
+			colIdx:    1,
+			wantValue: "<span style='color: red;'>查看平台重要更新</span>及调整信息。",
+			wantCount: 2,
+		},
+		{
+			name:       "br tag with Indices",
+			sourceJSON: `{"filter":{"lable":"Filter <br>Date"}}`,
+			entries: []extractor.FlatEntry{
+				{KeyPath: "filter.lable", Value: "Filter <br>Date"},
+			},
+			splitMeta: map[string]tagsplit.SplitMetaEntry{
+				"filter.lable": {
+					Template: []string{"<br>", ""},
+					SegCount: 2,
+					Indices:  []int{0, 1},
+				},
+			},
+			rows: [][]string{
+				{"Filter <br>Date", "筛选"},
+				{"Filter <br>Date", "日期"},
+			},
+			langIdx:   0,
+			colIdx:    1,
+			wantValue: "筛选<br>日期",
+			wantCount: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &Generator{}
+			data := &xlsx.SheetData{
+				SourceLang:  "en",
+				TargetLangs: []string{"zh-CN"},
+				Rows:        tt.rows,
+				SplitMeta:   tt.splitMeta,
+			}
+
+			modified, count, missing, phWarnings, err := g.applyTranslationsSplit(
+				tt.sourceJSON, data, tt.entries, tt.splitMeta, tt.langIdx, tt.colIdx,
+			)
+			if err != nil {
+				t.Fatalf("applyTranslationsSplit error: %v", err)
+			}
+			if count != tt.wantCount {
+				t.Errorf("count = %d, want %d", count, tt.wantCount)
+			}
+			if len(missing) > 0 {
+				t.Errorf("unexpected missing rows: %v", missing)
+			}
+			if len(phWarnings) > 0 {
+				t.Errorf("unexpected phWarnings: %v", phWarnings)
+			}
+
+			var result map[string]interface{}
+			if err := json.Unmarshal([]byte(modified), &result); err != nil {
+				t.Fatalf("json unmarshal error: %v", err)
+			}
+
+			var gotValue string
+			keys := strings.Split(tt.entries[0].KeyPath, ".")
+			current := result
+			for i, k := range keys {
+				if i == len(keys)-1 {
+					gotValue = current[k].(string)
+				} else {
+					current = current[k].(map[string]interface{})
+				}
+			}
+
+			if gotValue != tt.wantValue {
+				t.Errorf("output value mismatch\ngot:  %s\nwant: %s", gotValue, tt.wantValue)
+			}
+		})
+	}
+}
+
+func TestApplyTranslationsSplitLegacy(t *testing.T) {
+	tests := []struct {
+		name       string
+		sourceJSON string
+		entries    []extractor.FlatEntry
+		splitMeta  map[string]tagsplit.SplitMetaEntry
+		rows       [][]string
+		langIdx    int
+		colIdx     int
+		wantValue  string
+		wantCount  int
+	}{
+		{
+			name: "span tag at start without Indices (legacy)",
+			sourceJSON: `{"banner":{"content":"<span style='color: red;'>Find the important updates</span> and adjustments on our platform."}}`,
+			entries: []extractor.FlatEntry{
+				{KeyPath: "banner.content", Value: "<span style='color: red;'>Find the important updates</span> and adjustments on our platform."},
+			},
+			splitMeta: map[string]tagsplit.SplitMetaEntry{
+				"banner.content": {
+					Template: []string{"<span style='color: red;'>", "</span>", ""},
+					SegCount: 2,
+				},
+			},
+			rows: [][]string{
+				{"<span style='color: red;'>Find the important updates</span> and adjustments on our platform.", "查看平台重要更新"},
+				{"<span style='color: red;'>Find the important updates</span> and adjustments on our platform.", "及调整信息。"},
+			},
+			langIdx:   0,
+			colIdx:    1,
+			wantValue: "<span style='color: red;'>查看平台重要更新</span>及调整信息。",
+			wantCount: 2,
+		},
+		{
+			name: "br tag without Indices (legacy)",
+			sourceJSON: `{"filter":{"lable":"Filter <br>Date"}}`,
+			entries: []extractor.FlatEntry{
+				{KeyPath: "filter.lable", Value: "Filter <br>Date"},
+			},
+			splitMeta: map[string]tagsplit.SplitMetaEntry{
+				"filter.lable": {
+					Template: []string{"<br>", ""},
+					SegCount: 2,
+				},
+			},
+			rows: [][]string{
+				{"Filter <br>Date", "筛选"},
+				{"Filter <br>Date", "日期"},
+			},
+			langIdx:   0,
+			colIdx:    1,
+			wantValue: "筛选<br>日期",
+			wantCount: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &Generator{}
+			data := &xlsx.SheetData{
+				SourceLang:  "en",
+				TargetLangs: []string{"zh-CN"},
+				Rows:        tt.rows,
+				SplitMeta:   tt.splitMeta,
+			}
+
+			modified, count, missing, phWarnings, err := g.applyTranslationsSplit(
+				tt.sourceJSON, data, tt.entries, tt.splitMeta, tt.langIdx, tt.colIdx,
+			)
+			if err != nil {
+				t.Fatalf("applyTranslationsSplit error: %v", err)
+			}
+			if count != tt.wantCount {
+				t.Errorf("count = %d, want %d", count, tt.wantCount)
+			}
+			if len(missing) > 0 {
+				t.Errorf("unexpected missing rows: %v", missing)
+			}
+			if len(phWarnings) > 0 {
+				t.Errorf("unexpected phWarnings: %v", phWarnings)
+			}
+
+			var result map[string]interface{}
+			if err := json.Unmarshal([]byte(modified), &result); err != nil {
+				t.Fatalf("json unmarshal error: %v", err)
+			}
+
+			var gotValue string
+			keys := strings.Split(tt.entries[0].KeyPath, ".")
+			current := result
+			for i, k := range keys {
+				if i == len(keys)-1 {
+					gotValue = current[k].(string)
+				} else {
+					current = current[k].(map[string]interface{})
+				}
+			}
+
+			if gotValue != tt.wantValue {
+				t.Errorf("output value mismatch\ngot:  %s\nwant: %s", gotValue, tt.wantValue)
 			}
 		})
 	}

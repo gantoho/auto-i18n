@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +15,14 @@ import (
 	"auto_i18n/internal/tagsplit"
 	"auto_i18n/internal/xlsx"
 )
+
+func jsonEncodeString(s string) string {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.Encode(s)
+	return strings.TrimSuffix(buf.String(), "\n")
+}
 
 type LangStats struct {
 	Lang          string
@@ -182,7 +192,7 @@ func (g *Generator) applyTranslations(modified string, data *xlsx.SheetData, ent
 			}
 		}
 
-		modified, err = sjson.Set(modified, entry.KeyPath, translated)
+		modified, err = sjson.SetRaw(modified, entry.KeyPath, jsonEncodeString(translated))
 		if err != nil {
 			return "", 0, nil, nil, fmt.Errorf("set value at %s: %w", entry.KeyPath, err)
 		}
@@ -203,7 +213,7 @@ func (g *Generator) applyTranslationsSplit(modified string, data *xlsx.SheetData
 		m, isSplit := splitMeta[entry.KeyPath]
 		if isSplit {
 			segCount := m.SegCount
-			segments := make([]string, segCount)
+			translatedSegs := make([]string, segCount)
 			allFilled := true
 
 			for si := 0; si < segCount; si++ {
@@ -219,12 +229,29 @@ func (g *Generator) applyTranslationsSplit(modified string, data *xlsx.SheetData
 					allFilled = false
 					translated = ""
 				}
-				segments[si] = translated
+				translatedSegs[si] = translated
 			}
 
 			if allFilled {
-				reassembled := tagsplit.Reassemble(segments, m.Template)
-				modified, err = sjson.Set(modified, entry.KeyPath, reassembled)
+				var reassembled string
+				indices := m.Indices
+				if len(indices) == 0 {
+					info := tagsplit.Split(entry.Value)
+					indices = make([]int, 0, m.SegCount)
+					for i, seg := range info.Segments {
+						if seg != "" {
+							indices = append(indices, i)
+						}
+					}
+				}
+				fullSegs := make([]string, len(m.Template))
+				for si, idx := range indices {
+					if idx < len(fullSegs) {
+						fullSegs[idx] = translatedSegs[si]
+					}
+				}
+				reassembled = tagsplit.Reassemble(fullSegs, m.Template)
+				modified, err = sjson.SetRaw(modified, entry.KeyPath, jsonEncodeString(reassembled))
 				if err != nil {
 					return "", 0, nil, nil, fmt.Errorf("set value at %s: %w", entry.KeyPath, err)
 				}
@@ -247,7 +274,7 @@ func (g *Generator) applyTranslationsSplit(modified string, data *xlsx.SheetData
 						phWarnings = append(phWarnings, entry.KeyPath)
 					}
 				}
-				modified, err = sjson.Set(modified, entry.KeyPath, translated)
+				modified, err = sjson.SetRaw(modified, entry.KeyPath, jsonEncodeString(translated))
 				if err != nil {
 					return "", 0, nil, nil, fmt.Errorf("set value at %s: %w", entry.KeyPath, err)
 				}

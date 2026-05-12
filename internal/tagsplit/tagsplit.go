@@ -15,6 +15,7 @@ type SplitInfo struct {
 type SplitMetaEntry struct {
 	Template []string `json:"t"`
 	SegCount int      `json:"n"`
+	Indices  []int    `json:"si,omitempty"`
 }
 
 func HasTags(s string) bool {
@@ -64,11 +65,11 @@ func Reassemble(segments []string, template []string) string {
 		maxLen = len(segments)
 	}
 	for i := 0; i < maxLen; i++ {
-		if i < len(template) {
-			buf.WriteString(template[i])
-		}
 		if i < len(segments) {
 			buf.WriteString(segments[i])
+		}
+		if i < len(template) {
+			buf.WriteString(template[i])
 		}
 	}
 	return buf.String()

@@ -92,11 +92,13 @@ func (r *ExtractResult) applySplitTags() {
 		if tagsplit.HasTags(entry.Value) {
 			info := tagsplit.Split(entry.Value)
 			segCount := 0
+			indices := make([]int, 0)
 			for i, seg := range info.Segments {
 				if seg == "" {
 					continue
 				}
 				segCount++
+				indices = append(indices, i)
 				newEntries = append(newEntries, FlatEntry{
 					KeyPath:         entry.KeyPath,
 					Value:           seg,
@@ -107,6 +109,7 @@ func (r *ExtractResult) applySplitTags() {
 			meta[entry.KeyPath] = tagsplit.SplitMetaEntry{
 				Template: info.Template,
 				SegCount: segCount,
+				Indices:  indices,
 			}
 		} else {
 			newEntries = append(newEntries, entry)

@@ -25,15 +25,8 @@ func jsonEncodeString(s string) string {
 }
 
 func formatJSON(raw string) ([]byte, error) {
-	var data interface{}
-	if err := json.Unmarshal([]byte(raw), &data); err != nil {
-		return nil, err
-	}
 	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-	enc.SetEscapeHTML(false)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(data); err != nil {
+	if err := json.Indent(&buf, []byte(raw), "", "  "); err != nil {
 		return nil, err
 	}
 	result := buf.Bytes()

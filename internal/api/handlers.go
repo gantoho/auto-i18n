@@ -71,6 +71,10 @@ func extractHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ext := extractor.New(jsonPath)
+	if splitTagsStr == "true" && stripTagsStr == "true" {
+		http.Error(w, "--split-tags 和 --strip-tags 不能同时使用", http.StatusBadRequest)
+		return
+	}
 	ext.SplitTags = splitTagsStr == "true"
 	ext.StripTags = stripTagsStr == "true"
 	result, err := ext.Run()

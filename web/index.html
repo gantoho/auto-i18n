@@ -1064,6 +1064,26 @@ function setWF(barId, step) {
   });
 }
 
+const FETCH_TIMEOUT = 60000;
+
+function friendlyError(e) {
+  if (e.name === 'AbortError') return '请求超时，请检查网络或减小文件大小后重试';
+  if (e.message === 'Failed to fetch' || e.message === 'NetworkError') return '网络连接失败，请检查服务是否正在运行';
+  if (e.message.includes('TypeError')) return '服务器返回了异常数据，请重试';
+  return e.message || '处理失败，请重试';
+}
+
+async function fetchWithTimeout(url, opts, timeoutMs) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs || FETCH_TIMEOUT);
+  try {
+    const r = await fetch(url, { ...opts, signal: ctrl.signal });
+    return r;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Extract
 setupDZ('drop-extract', 'extract-input', 'extract-filename', 'extract-filesize', updE);
 
@@ -1100,6 +1120,9 @@ document.addEventListener('keydown', e => {
     const btn2 = document.getElementById('generate-btn');
     if (!btn2.disabled && document.getElementById('panel-generate').classList.contains('active')) btn2.click();
   }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'e') { e.preventDefault(); navigateTo('/extract'); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'g') { e.preventDefault(); navigateTo('/generate'); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'h') { e.preventDefault(); navigateTo('/history'); }
 });
 
 function updE() {
@@ -1129,7 +1152,7 @@ document.getElementById('extract-btn').addEventListener('click', async () => {
   fd.append('splitTags', document.getElementById('split-tags-check').checked ? 'true' : '');
   fd.append('stripTags', document.getElementById('strip-tags-check').checked ? 'true' : '');
   try {
-    const r = await fetch('/api/extract', { method: 'POST', body: fd });
+    const r = await fetchWithTimeout('/api/extract', { method: 'POST', body: fd });
     if (!r.ok) throw new Error(await r.text());
     const ct = r.headers.get('X-I18n-Count') || '-';
     const blob = await r.blob();
@@ -1139,8 +1162,8 @@ document.getElementById('extract-btn').addEventListener('click', async () => {
     showSt('extract-status', 'ok', '&#10003; 提取成功<br><a href="' + url + '" download="' + nm + '" class="btn btn-p">&#8595; 下载 xlsx 模板</a>');
     document.querySelectorAll('#wf-extract .step').forEach(s => s.classList.add('done'));
   } catch (e) {
-    addH({ type: 'extract', filename: fn, status: 'error', error: e.message });
-    showSt('extract-status', 'er', '&#10007; ' + (e.message || '处理失败'));
+    addH({ type: 'extract', filename: fn, status: 'error', error: friendlyError(e) });
+    showSt('extract-status', 'er', '&#10007; ' + friendlyError(e));
   } finally { btn.disabled = false; }
 });
 
@@ -1165,7 +1188,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   fd.append('json', jf);
   fd.append('dirPattern', document.getElementById('dir-pattern-input').value.trim());
   try {
-    const r = await fetch('/api/generate', { method: 'POST', body: fd });
+    const r = await fetchWithTimeout('/api/generate', { method: 'POST', body: fd });
     if (!r.ok) throw new Error(await r.text());
     const ct = r.headers.get('X-I18n-Count') || '-';
     const lg = r.headers.get('X-I18n-Langs') || '';
@@ -1194,8 +1217,8 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     showSt('generate-status', 'ok', '&#10003; 生成成功' + compHtml + '<br><a href="' + url + '" download="' + nm + '" class="btn btn-s">&#8595; 下载 JSON（ZIP）</a>');
     document.querySelectorAll('#wf-generate .step').forEach(s => s.classList.add('done'));
   } catch (e) {
-    addH({ type: 'generate', filename: jf.name, status: 'error', error: e.message });
-    showSt('generate-status', 'er', '&#10007; ' + (e.message || '处理失败'));
+    addH({ type: 'generate', filename: jf.name, status: 'error', error: friendlyError(e) });
+    showSt('generate-status', 'er', '&#10007; ' + friendlyError(e));
   } finally { btn.disabled = false; }
 });
 

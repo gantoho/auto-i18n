@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"io/fs"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -201,10 +205,25 @@ var serverCmd = &cobra.Command{
 		api.SetupRoutes(mux, http.FS(subFS))
 
 		addr := fmt.Sprintf(":%d", serverPort)
-		fmt.Printf("🌐 Auto i18n Web UI started\n")
-		fmt.Printf("   Open: http://localhost%s\n", addr)
-		fmt.Printf("   Press Ctrl+C to stop\n")
-		return http.ListenAndServe(addr, mux)
+		srv := &http.Server{Addr: addr, Handler: mux}
+
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+		go func() {
+			fmt.Printf("🌐 Auto i18n Web UI started\n")
+			fmt.Printf("   Open: http://localhost%s\n", addr)
+			fmt.Printf("   Press Ctrl+C to stop\n")
+			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				fmt.Fprintf(os.Stderr, "✗ Server error: %v\n", err)
+			}
+		}()
+
+		<-quit
+		fmt.Println("\nShutting down...")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return srv.Shutdown(ctx)
 	},
 }
 

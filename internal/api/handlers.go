@@ -9,11 +9,24 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+
+	"github.com/xuri/excelize/v2"
+	"golang.org/x/net/html"
 
 	"auto_i18n/internal/extractor"
 	"auto_i18n/internal/generator"
 	"auto_i18n/internal/xlsx"
+)
+
+var (
+	htmlTagRegex         = regexp.MustCompile(`<[^>]*>`)
+	htmlCommentRegex     = regexp.MustCompile(`(?is)<!--.*?-->`)
+	htmlLineBreakRegex   = regexp.MustCompile(`(?i)<br\s*/?>`)
+	htmlBlockRegex       = regexp.MustCompile(`(?i)</?(?:p|div|h[1-6]|li|tr|td|th|blockquote|pre|section|article)[^>]*>`)
+	htmlStripBlocksRegex = regexp.MustCompile(`(?is)<(?:script|style)[^>]*>.*?</(?:script|style)>`)
+	htmlNavBlocksRegex   = regexp.MustCompile(`(?is)<(?:header|footer|nav|aside)[^>]*>.*?</(?:header|footer|nav|aside)>`)
 )
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -264,21 +277,17 @@ func checkHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer xlsxFile.Close()
 
-	jsonFile, _, err := r.FormFile("json")
-	if err != nil {
-		http.Error(w, fmt.Sprintf("read json file: %v", err), http.StatusBadRequest)
-		return
-	}
-	defer jsonFile.Close()
-
 	xlsxData, err := io.ReadAll(xlsxFile)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("read xlsx content: %v", err), http.StatusBadRequest)
 		return
 	}
-	jsonData, err := io.ReadAll(jsonFile)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("read json content: %v", err), http.StatusBadRequest)
+
+	webText := strings.TrimSpace(r.FormValue("webtext"))
+	specifiedColumn := strings.TrimSpace(r.FormValue("column"))
+
+	if webText == "" {
+		http.Error(w, "webtext is required", http.StatusBadRequest)
 		return
 	}
 
@@ -290,13 +299,8 @@ func checkHandler(w http.ResponseWriter, r *http.Request) {
 	defer os.RemoveAll(tmpDir)
 
 	xlsxPath := filepath.Join(tmpDir, "check.xlsx")
-	jsonPath := filepath.Join(tmpDir, "source.json")
 	if err := os.WriteFile(xlsxPath, xlsxData, 0644); err != nil {
 		http.Error(w, fmt.Sprintf("write xlsx: %v", err), http.StatusInternalServerError)
-		return
-	}
-	if err := os.WriteFile(jsonPath, jsonData, 0644); err != nil {
-		http.Error(w, fmt.Sprintf("write json: %v", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -307,87 +311,345 @@ func checkHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entries, err := extractor.ExtractEntries(jsonData)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("parse json: %v", err), http.StatusBadRequest)
+	// Split web text into segments (by newline)
+	rawSegments := strings.Split(webText, "\n")
+	segments := make([]string, 0)
+	for _, s := range rawSegments {
+		s = strings.TrimSpace(s)
+		if s != "" {
+			segments = append(segments, s)
+		}
+	}
+	if len(segments) == 0 {
+		http.Error(w, "webtext has no non-empty segments", http.StatusBadRequest)
 		return
 	}
 
-	entryValues := make([]string, len(entries))
-	entryPaths := make([]string, len(entries))
-	for i, e := range entries {
-		entryValues[i] = e.Value
-		entryPaths[i] = e.KeyPath
+	// Build column info
+	type colInfo struct {
+		Index   int    `json:"index"`
+		Header  string `json:"header"`
+		ColName string `json:"colName"`
+		Match   int    `json:"match"`
+		Values  []string
 	}
 
-	type RowCheck struct {
-		Row       int      `json:"row"`
-		Source    string   `json:"source"`
-		Found     bool     `json:"found"`
-		KeyPath   string   `json:"keyPath,omitempty"`
-		Targets   []string `json:"targets"`
-		FilledCnt int      `json:"filledCnt"`
-		TotalCols int      `json:"totalCols"`
-	}
-
-	results := make([]RowCheck, 0, len(sheetData.Rows))
-	matched := 0
-	totalRows := 0
-	totalFilled := 0
-	totalCells := 0
-
-	for i, row := range sheetData.Rows {
-		src := row[0]
-		if src == "" {
-			continue
+	totalCols := len(sheetData.TargetLangs) + 1 // source + all targets
+	cols := make([]colInfo, totalCols)
+	for ci := 0; ci < totalCols; ci++ {
+		name, _ := excelize.ColumnNumberToName(ci + 1)
+		if ci == 0 {
+			cols[ci] = colInfo{Index: ci, Header: sheetData.SourceLang, ColName: name}
+		} else {
+			cols[ci] = colInfo{Index: ci, Header: sheetData.TargetLangs[ci-1], ColName: name}
 		}
-		totalRows++
+	}
 
+	// Fill values and count matches
+	for ci := 0; ci < totalCols; ci++ {
+		vals := make([]string, 0, len(sheetData.Rows))
+		for _, row := range sheetData.Rows {
+			if ci < len(row) {
+				v := strings.TrimSpace(row[ci])
+				if v != "" {
+					vals = append(vals, v)
+				}
+			}
+		}
+		cols[ci].Values = vals
+
+		// Count how many web segments appear in this column's values
+		match := 0
+		for _, seg := range segments {
+			for _, v := range vals {
+				if strings.Contains(v, seg) || strings.Contains(seg, v) {
+					match++
+					break
+				}
+			}
+		}
+		cols[ci].Match = match
+	}
+
+	// Auto-detect the best matching column
+	bestColIdx := 0
+	bestMatch := 0
+	for ci := 0; ci < totalCols; ci++ {
+		if cols[ci].Match > bestMatch {
+			bestMatch = cols[ci].Match
+			bestColIdx = ci
+		}
+	}
+
+	// User-specified column override
+	if specifiedColumn != "" {
+		specUpper := strings.ToUpper(specifiedColumn)
+		for ci := 0; ci < totalCols; ci++ {
+			if cols[ci].ColName == specUpper ||
+				strings.EqualFold(cols[ci].Header, specifiedColumn) {
+				bestColIdx = ci
+				bestMatch = cols[ci].Match
+				break
+			}
+		}
+	}
+
+	// Check each segment against the matched column
+	type checkItem struct {
+		Segment string `json:"segment"`
+		Found   bool   `json:"found"`
+	}
+
+	checks := make([]checkItem, 0, len(segments))
+	foundCount := 0
+	matchedVals := cols[bestColIdx].Values
+
+	for _, seg := range segments {
 		found := false
-		foundPath := ""
-		for j, ev := range entryValues {
-			if ev == src {
+		for _, v := range matchedVals {
+			if strings.Contains(v, seg) || strings.Contains(seg, v) {
 				found = true
-				foundPath = entryPaths[j]
 				break
 			}
 		}
 		if found {
-			matched++
+			foundCount++
 		}
+		checks = append(checks, checkItem{Segment: seg, Found: found})
+	}
 
-		targets := make([]string, 0)
-		filled := 0
-		for ci := 1; ci < len(row); ci++ {
-			targets = append(targets, row[ci])
-			if row[ci] != "" {
-				filled++
+	// Also show values in matched column that aren't found in web text (extra)
+	type extraItem struct {
+		Value string `json:"value"`
+	}
+	extras := make([]extraItem, 0)
+	for _, v := range matchedVals {
+		matched := false
+		for _, seg := range segments {
+			if strings.Contains(v, seg) || strings.Contains(seg, v) {
+				matched = true
+				break
 			}
 		}
-		totalFilled += filled
-		totalCells += len(row) - 1
-
-		results = append(results, RowCheck{
-			Row:       i + 2,
-			Source:    src,
-			Found:     found,
-			KeyPath:   foundPath,
-			Targets:   targets,
-			FilledCnt: filled,
-			TotalCols: len(row) - 1,
-		})
+		if !matched {
+			extras = append(extras, extraItem{Value: v})
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"sourceLang":  sheetData.SourceLang,
-		"targetLangs": sheetData.TargetLangs,
-		"totalRows":   totalRows,
-		"matchedRows": matched,
-		"matchRate":   float64(matched) / float64(totalRows) * 100,
-		"fillRate":    float64(totalFilled) / float64(totalCells) * 100,
-		"totalFilled": totalFilled,
-		"totalCells":  totalCells,
-		"results":     results,
+		"totalSegments": len(segments),
+		"foundCount":    foundCount,
+		"matchRate":     float64(foundCount) / float64(len(segments)) * 100,
+		"columns":       cols,
+		"matchedColumn": bestColIdx,
+		"matchedName":   cols[bestColIdx].ColName + " (" + cols[bestColIdx].Header + ")",
+		"checks":        checks,
+		"extras":        extras,
+		"autoDetected":  specifiedColumn == "" && bestMatch > 0,
 	})
+}
+
+func fetchURLHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, fmt.Sprintf("parse form: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	targetURL := strings.TrimSpace(r.FormValue("url"))
+	if targetURL == "" {
+		http.Error(w, "url is required", http.StatusBadRequest)
+		return
+	}
+
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", targetURL, nil)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("create request: %v", err), http.StatusBadRequest)
+		return
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; AutoI18n/1.0)")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("fetch url: %v", err), http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		http.Error(w, fmt.Sprintf("server returned %d", resp.StatusCode), http.StatusBadGateway)
+		return
+	}
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 5*1024*1024))
+	if err != nil {
+		http.Error(w, fmt.Sprintf("read body: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	raw := string(body)
+
+	exclude := strings.TrimSpace(r.FormValue("exclude"))
+	if exclude != "" {
+		doc, err := html.Parse(strings.NewReader(raw))
+		if err == nil {
+			parts := strings.Split(exclude, ",")
+			for _, part := range parts {
+				part = strings.TrimSpace(part)
+				if part == "" {
+					continue
+				}
+				if strings.HasPrefix(part, ".") {
+					cn := part[1:]
+					removeNodes(doc, func(n *html.Node) bool {
+						return hasClass(n, cn)
+					})
+				} else if strings.HasPrefix(part, "#") {
+					idn := part[1:]
+					removeNodes(doc, func(n *html.Node) bool {
+						return hasID(n, idn)
+					})
+				} else {
+					removeNodes(doc, func(n *html.Node) bool {
+						return n.Type == html.ElementNode && strings.EqualFold(n.Data, part)
+					})
+				}
+			}
+			raw = extractTextFromDOM(doc)
+		}
+	}
+
+	if exclude == "" {
+		raw = htmlStripBlocksRegex.ReplaceAllString(raw, "")
+		raw = htmlNavBlocksRegex.ReplaceAllString(raw, "")
+		raw = htmlCommentRegex.ReplaceAllString(raw, "")
+		raw = htmlLineBreakRegex.ReplaceAllString(raw, "\n")
+		raw = htmlBlockRegex.ReplaceAllString(raw, "\n")
+	}
+	raw = htmlTagRegex.ReplaceAllString(raw, "")
+
+	lines := strings.Split(raw, "\n")
+	seen := make(map[string]bool)
+	result := make([]string, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if isNumeric(line) {
+			continue
+		}
+		normalized := strings.ToLower(line)
+		if seen[normalized] {
+			continue
+		}
+		seen[normalized] = true
+		result = append(result, line)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"text":  strings.Join(result, "\n"),
+		"lines": len(result),
+	})
+}
+
+// ---- DOM helpers for exclude filtering ----
+
+func hasClass(n *html.Node, className string) bool {
+	if n.Type != html.ElementNode {
+		return false
+	}
+	for _, attr := range n.Attr {
+		if attr.Key == "class" {
+			for _, cls := range strings.Fields(attr.Val) {
+				if cls == className {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func hasID(n *html.Node, idName string) bool {
+	if n.Type != html.ElementNode {
+		return false
+	}
+	for _, attr := range n.Attr {
+		if attr.Key == "id" && attr.Val == idName {
+			return true
+		}
+	}
+	return false
+}
+
+func removeNodes(n *html.Node, match func(*html.Node) bool) {
+	if n == nil {
+		return
+	}
+	child := n.FirstChild
+	for child != nil {
+		next := child.NextSibling
+		if match(child) {
+			n.RemoveChild(child)
+		} else {
+			removeNodes(child, match)
+		}
+		child = next
+	}
+}
+
+func extractTextFromDOM(n *html.Node) string {
+	var buf strings.Builder
+	extractTextRecursive(n, &buf)
+	return buf.String()
+}
+
+var domBlockTags = map[string]bool{
+	"p": true, "div": true, "h1": true, "h2": true, "h3": true,
+	"h4": true, "h5": true, "h6": true, "li": true, "tr": true,
+	"td": true, "th": true, "blockquote": true, "pre": true,
+	"section": true, "article": true, "header": true, "footer": true,
+	"nav": true, "aside": true, "br": true,
+}
+
+func extractTextRecursive(n *html.Node, buf *strings.Builder) {
+	if n == nil {
+		return
+	}
+	if n.Type == html.CommentNode {
+		return
+	}
+	if n.Type == html.ElementNode {
+		tag := strings.ToLower(n.Data)
+		if tag == "script" || tag == "style" {
+			return
+		}
+	}
+	if n.Type == html.TextNode {
+		buf.WriteString(n.Data)
+	}
+	if n.Type == html.ElementNode && domBlockTags[strings.ToLower(n.Data)] {
+		buf.WriteByte('\n')
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		extractTextRecursive(c, buf)
+	}
+}
+
+func isNumeric(s string) bool {
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return len(s) > 0
 }

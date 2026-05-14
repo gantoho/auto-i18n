@@ -517,6 +517,14 @@
   .dialog-box .dialog-acts button {
     min-width: 80px;
   }
+
+  .bk { margin-top: 12px; padding: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .bk code { font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 12px; background: var(--surface); padding: 2px 6px; border-radius: 3px; border: 1px solid var(--border); color: var(--text); word-break: break-all; }
+  .bk a { color: var(--primary); text-decoration: none; }
+  .bk a:hover { text-decoration: underline; }
+  .bk strong { color: var(--text); }
+  .bk .bm { display: inline-block; padding: 6px 14px; background: var(--primary); color: #fff; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: grab; user-select: none; }
+  .bk .bm:hover { background: var(--primary-hover); }
 </style>
 </head>
 <body>
@@ -544,6 +552,7 @@
     <button class="tab" data-tab="check">
       <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
       检查
+      <span class="kbd">Ctrl+K</span>
     </button>
   </div>
   <div class="spacer"></div>
@@ -736,46 +745,66 @@
 <div class="panel" id="panel-check">
   <div class="panel-h">
     <h2>检查翻译一致性</h2>
-    <p>校验 xlsx 翻译模板中的源文案与原始 JSON 是否完全匹配</p>
+    <p>上传 xlsx 翻译模板，粘贴网页文案，自动识别对应语言列并检查文案是否完整覆盖</p>
   </div>
 
   <div class="card">
-    <div class="gc">
-      <div class="fld">
-        <label>翻译模板 xlsx</label>
-        <div class="drop" id="drop-check-xlsx">
-          <div class="dp">
-            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/><path d="M12 11v4h-2l3 3 3-3h-2v-4h-2z"/></svg>
-            <div class="dt">点击或拖拽上传</div>
-            <div class="ds">支持 .xlsx 格式</div>
-          </div>
-          <div class="df">
-            <div class="di">
-              <div class="nm"><svg viewBox="0 0 20 20" style="width:16px;height:16px;vertical-align:middle;margin-right:4px"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg><span id="check-xlsx-filename"></span></div>
-              <div class="sz" id="check-xlsx-filesize"></div>
-            </div>
+    <div class="fld">
+      <label>翻译模板 xlsx</label>
+      <div class="drop" id="drop-check-xlsx">
+        <div class="dp">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/><path d="M12 11v4h-2l3 3 3-3h-2v-4h-2z"/></svg>
+          <div class="dt">点击或拖拽上传</div>
+          <div class="ds">支持 .xlsx 格式</div>
+        </div>
+        <div class="df">
+          <div class="di">
+            <div class="nm"><svg viewBox="0 0 20 20" style="width:16px;height:16px;vertical-align:middle;margin-right:4px"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg><span id="check-xlsx-filename"></span></div>
+            <div class="sz" id="check-xlsx-filesize"></div>
           </div>
         </div>
-        <input type="file" id="check-xlsx-input" accept=".xlsx" style="display:none">
       </div>
-      <div class="fld">
-        <label>原始 JSON</label>
-        <div class="drop" id="drop-check-json">
-          <div class="dp">
-            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/><path d="M12 11v4h-2l3 3 3-3h-2v-4h-2z"/></svg>
-            <div class="dt">点击或拖拽上传</div>
-            <div class="ds">支持 .json 格式</div>
-          </div>
-          <div class="df">
-            <div class="di">
-              <div class="nm"><svg viewBox="0 0 20 20" style="width:16px;height:16px;vertical-align:middle;margin-right:4px"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg><span id="check-json-filename"></span></div>
-              <div class="sz" id="check-json-filesize"></div>
-            </div>
-          </div>
-        </div>
-        <input type="file" id="check-json-input" accept=".json" style="display:none">
+      <input type="file" id="check-xlsx-input" accept=".xlsx" style="display:none">
+    </div>
+
+    <div class="fld">
+      <label>从链接获取网页文案</label>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="check-url" placeholder="输入网页 URL，例如 https://example.com" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;background:var(--surface);color:var(--text)">
+        <button class="btn btn-p" id="fetch-url-btn">获取</button>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px;min-height:18px" id="check-url-status"></div>
+    </div>
+
+    <div class="fld">
+      <label>网页文案（每行一段文案）
+        <button class="btn-g btn-sm" id="paste-btn" style="font-size:11px;margin-left:6px;vertical-align:middle">从剪贴板粘贴</button>
+      </label>
+      <textarea id="check-webtext" rows="8" placeholder="将网页上的文案粘贴到这里，每行一段&#10;&#10;例如：&#10;Client Notices&#10;Find the important updates&#10;Home&#10;Filter Date&#10;Categories&#10;Search" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;background:var(--surface);color:var(--text);font-family:inherit;resize:vertical" oninput="updCheck()"></textarea>
+    </div>
+
+    <div class="fld">
+      <label>忽略区域（CSS 选择器）<span class="ht">（书签/F12：直接用 CSS 选择器过滤 DOM 元素。链接获取：自动提取类名和 ID 名为关键词，过滤包含这些关键词的文本行）</span></label>
+      <input type="text" id="check-exclude" placeholder="例如: .header, .footer, nav, #sidebar — 支持类名、ID、标签名，逗号分隔" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;background:var(--surface);color:var(--text)">
+    </div>
+
+    <div class="bk">
+        <strong>一键获取网页文案</strong><br>
+        将下面的按钮拖到浏览器书签栏，然后在目标网页上点击书签，文案会自动填入上方文本框：<br><br>
+        <a class="bm" id="bookmarklet-link" href="#">&#128279; 获取文案</a>
+        <span style="margin-left:8px;font-size:12px;color:var(--text3)">拖到书签栏，点击即用</span>
+        <br><br>
+        也可以将以下代码粘贴到浏览器开发者工具 (F12) 的控制台中运行：
+        <br>
+        <code id="bookmarklet-code" style="display:block;margin-top:6px;padding:8px;white-space:pre-wrap">加载中...</code>
       </div>
     </div>
+
+    <div class="fld">
+      <label>指定语言列 <span class="ht">（可选，留空则自动识别）</span></label>
+      <input type="text" id="check-column" placeholder="例如: B 或 zh-CN（留空自动检测匹配最多的列）" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;background:var(--surface);color:var(--text)">
+    </div>
+
     <div class="acts">
       <button class="btn btn-p" id="check-btn" disabled>开始检查</button>
     </div>
@@ -783,41 +812,40 @@
   </div>
 
   <div class="card" id="check-result-card" style="display:none">
-    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">
-      <div style="flex:1;min-width:120px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);text-align:center">
-        <div style="font-size:24px;font-weight:700;color:var(--text)" id="check-total-rows">0</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:2px">总行数</div>
-      </div>
-      <div style="flex:1;min-width:120px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);text-align:center">
-        <div style="font-size:24px;font-weight:700;color:var(--success)" id="check-matched-rows">0</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:2px">已匹配</div>
-      </div>
-      <div style="flex:1;min-width:120px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);text-align:center">
-        <div style="font-size:24px;font-weight:700" id="check-mismatch-rows">0</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:2px">不匹配</div>
-      </div>
-      <div style="flex:1;min-width:120px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);text-align:center">
-        <div style="font-size:24px;font-weight:700;color:var(--primary)" id="check-match-rate">0%</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:2px">匹配率</div>
-      </div>
-      <div style="flex:1;min-width:120px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);text-align:center">
-        <div style="font-size:24px;font-weight:700;color:var(--success)" id="check-fill-rate">0%</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:2px">翻译完成率</div>
-      </div>
+    <div style="margin-bottom:16px;padding:10px 14px;background:var(--primary-bg);border-radius:var(--radius-sm);font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap" id="check-detected-info">
+      <span>自动识别匹配列：<strong id="check-matched-name"></strong></span>
+      <span style="color:var(--text3)">&middot;</span>
+      <span>共 <strong id="check-total-segments"></strong> 段文案</span>
+      <span style="color:var(--text3)">&middot;</span>
+      <span>匹配 <strong id="check-found-count" style="color:var(--success)"></strong> 段</span>
+      <span style="color:var(--text3)" id="check-miss-count"></span>
     </div>
+
     <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:13px" id="check-result-table">
         <thead>
           <tr style="background:var(--surface2)">
-            <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap">行</th>
-            <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border)">源文案</th>
-            <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border)">匹配状态</th>
-            <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border)">路径</th>
-            <th style="padding:8px 10px;text-align:center;border-bottom:2px solid var(--border)" id="check-lang-header">翻译列</th>
+            <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border)">#</th>
+            <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border)">网页文案</th>
+            <th style="padding:8px 10px;text-align:center;border-bottom:2px solid var(--border)">匹配</th>
           </tr>
         </thead>
         <tbody id="check-result-body"></tbody>
       </table>
+    </div>
+
+    <div id="check-extras-section" style="display:none;margin-top:16px">
+      <div style="font-size:14px;font-weight:600;margin-bottom:8px">匹配列中多余的文案</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px" id="check-extras-table">
+          <thead>
+            <tr style="background:var(--surface2)">
+              <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border)">文案</th>
+            </tr>
+          </thead>
+          <tbody id="check-extras-body"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -872,6 +900,118 @@ themeBtn.addEventListener('click', () => {
 const saved = localStorage.getItem('theme');
 if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme:dark)').matches)) {
   setTheme(true);
+}
+
+// ---- Diff Utility ----
+function lineDiff(a, b) {
+  const la = a.split('\n');
+  const lb = b.split('\n');
+  const dp = Array.from({ length: la.length + 1 }, () => Array(lb.length + 1).fill(0));
+  for (let i = 1; i <= la.length; i++)
+    for (let j = 1; j <= lb.length; j++)
+      dp[i][j] = la[i - 1] === lb[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+  const result = [];
+  let i = la.length, j = lb.length;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && la[i - 1] === lb[j - 1]) { result.unshift({ t: '=', v: la[i - 1] }); i--; j--; }
+    else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) { result.unshift({ t: '+', v: lb[j - 1] }); j--; }
+    else { result.unshift({ t: '-', v: la[i - 1] }); i--; }
+  }
+  return result;
+}
+
+function renderDiff(a, b) {
+  const diff = lineDiff(a, b);
+  const cls = { '=': 'nl', '-': 'dl', '+': 'al' };
+  const pre = { '=': ' ', '-': '-', '+': '+' };
+  return diff.map(d => '<span class="' + cls[d.t] + '">' + escHtml(pre[d.t] + ' ' + d.v) + '</span>').join('');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ---- Preview Data ----
+let extractPreviewData = null;
+let generatePreviewData = null;
+
+async function fetchExtractPreview() {
+  const inp = document.getElementById('extract-input');
+  if (!inp.files.length) return;
+  const fd = new FormData();
+  fd.append('file', inp.files[0]);
+  fd.append('splitTags', splitTagsCheck.checked ? 'true' : '');
+  fd.append('stripTags', stripTagsCheck.checked ? 'true' : '');
+  try {
+    const r = await fetch('/api/extract-preview', { method: 'POST', body: fd });
+    if (!r.ok) return;
+    extractPreviewData = await r.json();
+  } catch { extractPreviewData = null; }
+}
+
+async function fetchGeneratePreview() {
+  const xf = document.getElementById('xlsx-input').files[0];
+  const jf = document.getElementById('json-input').files[0];
+  if (!xf || !jf) return;
+  const fd = new FormData();
+  fd.append('xlsx', xf);
+  fd.append('json', jf);
+  fd.append('dirPattern', document.getElementById('dir-pattern-input').value.trim());
+  try {
+    const r = await fetch('/api/generate-preview', { method: 'POST', body: fd });
+    if (!r.ok) return;
+    generatePreviewData = await r.json();
+  } catch { generatePreviewData = null; }
+}
+
+function toggleExtractDiff() {
+  const body = document.getElementById('extract-dv-body');
+  const h = document.querySelector('#extract-dv .dv-h');
+  body.classList.toggle('sh');
+  h.classList.toggle('sh');
+  if (body.classList.contains('sh') && extractPreviewData) {
+    renderExtractDiff();
+  }
+}
+
+function renderExtractDiff() {
+  const el = document.getElementById('extract-dv-content');
+  if (!extractPreviewData) { el.innerHTML = '<div class="dv-info">预览数据不可用</div>'; return; }
+  const original = extractPreviewData.originalJSON;
+  const flatLines = extractPreviewData.entries.map(e => e.keyPath + ': ' + e.value);
+  const flatText = flatLines.join('\n');
+  el.innerHTML = '<div style="margin-bottom:8px;font-size:12px;color:var(--text2)">源 JSON vs 提取条目（红色=删除, 绿色=新增）</div>' +
+    '<pre>' + renderDiff(original, flatText) + '</pre>' +
+    '<div class="dv-info">共提取 ' + extractPreviewData.count + ' 条文案，源语言: ' + (extractPreviewData.sourceLang || '自动检测') + '</div>';
+}
+
+function toggleGenerateDiff() {
+  const body = document.getElementById('generate-dv-body');
+  const h = document.querySelector('#generate-dv .dv-h');
+  body.classList.toggle('sh');
+  h.classList.toggle('sh');
+  if (body.classList.contains('sh') && generatePreviewData) {
+    renderGenerateDiff();
+  }
+}
+
+let generateDiffCurrentLang = 0;
+
+function renderGenerateDiff(langIdx) {
+  if (langIdx !== undefined) generateDiffCurrentLang = langIdx;
+  const data = generatePreviewData;
+  if (!data || !data.targetLangs.length) {
+    document.getElementById('generate-dv-content').innerHTML = '<div class="dv-info">预览数据不可用</div>';
+    return;
+  }
+  const tabsEl = document.getElementById('generate-dv-tabs');
+  tabsEl.innerHTML = data.targetLangs.map((l, i) =>
+    '<button class="dv-tab' + (i === generateDiffCurrentLang ? ' sel' : '') + '" onclick="renderGenerateDiff(' + i + ')">' + escHtml(l.lang) + '</button>'
+  ).join('');
+  const target = data.targetLangs[generateDiffCurrentLang];
+  const el = document.getElementById('generate-dv-content');
+  el.innerHTML = '<div style="margin-bottom:8px;font-size:12px;color:var(--text2)">源 JSON vs ' + escHtml(target.lang) + '（红色=删除, 绿色=新增）</div>' +
+    '<pre>' + renderDiff(data.sourceJSON, target.content) + '</pre>';
 }
 
 // Storage
@@ -1348,26 +1488,41 @@ document.getElementById('dir-pattern-input').addEventListener('input', () => {
   saveSettingsPatch({ dirPattern: document.getElementById('dir-pattern-input').value });
 });
 
+// Check page input memory
+document.getElementById('check-url').addEventListener('input', () => {
+  saveSettingsPatch({ checkUrl: document.getElementById('check-url').value });
+});
+document.getElementById('check-webtext').addEventListener('input', () => {
+  saveSettingsPatch({ checkWebtext: document.getElementById('check-webtext').value });
+});
+document.getElementById('check-exclude').addEventListener('input', () => {
+  saveSettingsPatch({ checkExclude: document.getElementById('check-exclude').value });
+});
+document.getElementById('check-column').addEventListener('input', () => {
+  saveSettingsPatch({ checkColumn: document.getElementById('check-column').value });
+});
+
 // Check
 setupDZ('drop-check-xlsx', 'check-xlsx-input', 'check-xlsx-filename', 'check-xlsx-filesize', updCheck);
-setupDZ('drop-check-json', 'check-json-input', 'check-json-filename', 'check-json-filesize', updCheck);
 
 function updCheck() {
   const a = document.getElementById('check-xlsx-input').files.length;
-  const b = document.getElementById('check-json-input').files.length;
+  const b = document.getElementById('check-webtext').value.trim().length > 0;
   document.getElementById('check-btn').disabled = !(a && b);
 }
 
 document.getElementById('check-btn').addEventListener('click', async () => {
   const btn = document.getElementById('check-btn');
   btn.disabled = true;
-  showSt('check-status', 'lo', '<span class="sp"></span>正在检查一致性...<div class="pb"><div class="bar"></div></div>');
+  showSt('check-status', 'lo', '<span class="sp"></span>正在检查...<div class="pb"><div class="bar"></div></div>');
   document.getElementById('check-result-card').style.display = 'none';
   const xf = document.getElementById('check-xlsx-input').files[0];
-  const jf = document.getElementById('check-json-input').files[0];
+  const wt = document.getElementById('check-webtext').value.trim();
+  const col = document.getElementById('check-column').value.trim();
   const fd = new FormData();
   fd.append('xlsx', xf);
-  fd.append('json', jf);
+  fd.append('webtext', wt);
+  fd.append('column', col);
   try {
     const r = await fetchWithTimeout('/api/check', { method: 'POST', body: fd });
     if (!r.ok) throw new Error(await r.text());
@@ -1380,42 +1535,40 @@ document.getElementById('check-btn').addEventListener('click', async () => {
 });
 
 function renderCheckResult(data) {
-  document.getElementById('check-total-rows').textContent = data.totalRows;
-  document.getElementById('check-matched-rows').textContent = data.matchedRows;
-  document.getElementById('check-mismatch-rows').textContent = data.totalRows - data.matchedRows;
-  document.getElementById('check-mismatch-rows').style.color = data.matchedRows === data.totalRows ? 'var(--success)' : 'var(--danger)';
-  document.getElementById('check-match-rate').textContent = data.matchRate.toFixed(1) + '%';
-  document.getElementById('check-match-rate').style.color = data.matchRate === 100 ? 'var(--success)' : (data.matchRate >= 80 ? '#d97706' : 'var(--danger)');
-  document.getElementById('check-fill-rate').textContent = data.fillRate.toFixed(1) + '%';
-  document.getElementById('check-fill-rate').style.color = data.fillRate === 100 ? 'var(--success)' : (data.fillRate >= 80 ? '#d97706' : 'var(--danger)');
-
-  let langHeader = '';
-  data.targetLangs.forEach((l, i) => {
-    langHeader += '<th style="padding:8px 10px;text-align:center;border-bottom:2px solid var(--border);white-space:nowrap">' + l + '</th>';
-  });
-  document.getElementById('check-lang-header').innerHTML = langHeader;
-
-  let bodyHtml = '';
-  data.results.forEach(r => {
-    const statusIcon = r.found ? '&#10003;' : '&#10007;';
-    const statusColor = r.found ? 'var(--success)' : 'var(--danger)';
-    const pathDisplay = r.found ? r.keyPath : '<span style="color:var(--danger)">未匹配</span>';
-    const rowBg = r.found ? '' : 'background:var(--danger-bg)';
-    let cellHtml = '';
-    r.targets.forEach(t => {
-      const filled = t ? 'background:var(--success-bg);color:var(--success)' : 'color:var(--text3)';
-      cellHtml += '<td style="padding:6px 10px;text-align:center;' + filled + ';border-bottom:1px solid var(--border);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + (t || '') + '">' + (t || '-') + '</td>';
-    });
-    bodyHtml += '<tr style="' + rowBg + '">' +
-      '<td style="padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text3);font-size:12px">' + r.row + '</td>' +
-      '<td style="padding:6px 10px;border-bottom:1px solid var(--border);max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + r.source + '">' + r.source + '</td>' +
-      '<td style="padding:6px 10px;border-bottom:1px solid var(--border);color:' + statusColor + ';font-weight:600">' + statusIcon + ' ' + (r.found ? '匹配' : '不匹配') + '</td>' +
-      '<td style="padding:6px 10px;border-bottom:1px solid var(--border);font-size:12px;font-family:monospace;max-width:200px;overflow:hidden;text-overflow:ellipsis">' + pathDisplay + '</td>' +
-      cellHtml +
-    '</tr>';
-  });
-  document.getElementById('check-result-body').innerHTML = bodyHtml;
   document.getElementById('check-result-card').style.display = 'block';
+  document.getElementById('check-matched-name').textContent = data.matchedName || '-';
+  document.getElementById('check-total-segments').textContent = data.totalSegments;
+  document.getElementById('check-found-count').textContent = data.foundCount + '/' + data.totalSegments;
+
+  const missCount = data.totalSegments - data.foundCount;
+  const missEl = document.getElementById('check-miss-count');
+  missEl.innerHTML = missCount > 0
+    ? '&middot; 缺失 <strong style="color:var(--danger)">' + missCount + '</strong> 段'
+    : '&middot; 全部匹配';
+
+  const body = document.getElementById('check-result-body');
+  body.innerHTML = (data.checks || []).map((c, i) =>
+    '<tr style="background:' + (c.found ? 'transparent' : 'var(--danger-bg)') + '">' +
+      '<td style="padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text3);font-size:12px">' + (i + 1) + '</td>' +
+      '<td style="padding:6px 10px;border-bottom:1px solid var(--border);max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escHtml(c.segment) + '">' + escHtml(c.segment) + '</td>' +
+      '<td style="padding:6px 10px;border-bottom:1px solid var(--border);text-align:center;font-weight:600">' +
+        (c.found
+          ? '<span style="color:var(--success)">&#10003; 已匹配</span>'
+          : '<span style="color:var(--danger)">&#10007; 未找到</span>') +
+      '</td>' +
+    '</tr>'
+  ).join('');
+
+  if (data.extras && data.extras.length > 0) {
+    document.getElementById('check-extras-section').style.display = 'block';
+    document.getElementById('check-extras-body').innerHTML = data.extras.map(e =>
+      '<tr>' +
+        '<td style="padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text3);max-width:600px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escHtml(e.value) + '">' + escHtml(e.value) + '</td>' +
+      '</tr>'
+    ).join('');
+  } else {
+    document.getElementById('check-extras-section').style.display = 'none';
+  }
 }
 
 // Dialog
@@ -1467,6 +1620,116 @@ function delH(id) {
   saveH(h.filter(item => item.id !== id));
 }
 
+// Paste button for check page
+document.getElementById('paste-btn').addEventListener('click', async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text) {
+      document.getElementById('check-webtext').value = text;
+      updCheck();
+    }
+  } catch {
+    document.getElementById('check-webtext').focus();
+    document.execCommand('paste');
+  }
+});
+
+// Fetch URL button for check page
+document.getElementById('fetch-url-btn').addEventListener('click', async () => {
+  const url = document.getElementById('check-url').value.trim();
+  if (!url) return;
+  const btn = document.getElementById('fetch-url-btn');
+  const status = document.getElementById('check-url-status');
+  btn.disabled = true;
+  status.innerHTML = '<span class="sp" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:4px;border-width:2px"></span>正在获取...';
+  try {
+    const exclude = document.getElementById('check-exclude').value.trim();
+    const r = await fetch('/api/fetch-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'url=' + encodeURIComponent(url) + (exclude ? '&exclude=' + encodeURIComponent(exclude) : '')
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const data = await r.json();
+    const resultText = data.text || '';
+    if (resultText) {
+      const lineCount = resultText.split('\n').filter(l => l.trim()).length;
+      document.getElementById('check-webtext').value = resultText;
+      status.innerHTML = '&#10003; 已获取 ' + lineCount + ' 段文案';
+      updCheck();
+    } else {
+      status.innerHTML = '&#9888; 未提取到文案内容';
+    }
+  } catch (e) {
+    status.innerHTML = '&#10007; ' + (e.message || '获取失败');
+  } finally { btn.disabled = false; }
+});
+
+// URL parameter auto-fill for check page (bookmarklet support)
+(function autoFillCheckText() {
+  const params = new URLSearchParams(window.location.search);
+  const text = params.get('text');
+  if (text) {
+    const ta = document.getElementById('check-webtext');
+    if (ta) {
+      ta.value = text;
+      updCheck();
+    }
+  }
+  const exclude = params.get('exclude');
+  if (exclude) {
+    const el = document.getElementById('check-exclude');
+    if (el) {
+      el.value = exclude;
+    }
+  }
+})();
+
+// Update bookmarklet link to use current server URL
+function updateBookmarklet() {
+  const link = document.getElementById('bookmarklet-link');
+  if (!link) return;
+  const base = window.location.origin;
+  const code = [
+    '(function(){',
+    'var s=' + JSON.stringify(document.getElementById('check-exclude').value) + ';',
+    'var d=document.body.cloneNode(true);',
+    'try{d.querySelectorAll("script,style,iframe,noscript,link,meta").forEach(function(e){e.remove()})}catch(e){}',
+    'if(s){s.split(",").forEach(function(sel){try{d.querySelectorAll(sel.trim()).forEach(function(e){e.remove()})}catch(e){}})}',
+    'var t=d.innerText;',
+    'var lines=t.split("\\n").map(function(l){return l.trim()}).filter(function(l){return l.length>0&&!/^\\d+$/.test(l)});',
+    'var text=lines.join("\\n").slice(0,20000);',
+    'var url="' + base + '/check?text="+encodeURIComponent(text);',
+    'if(s){url+="&exclude="+encodeURIComponent(s)}',
+    'window.open(url,"_blank")',
+    '})();'
+  ].join('');
+  link.href = 'javascript:' + code;
+  const displayExclude = document.getElementById('check-exclude').value.trim();
+  const displayCode = [
+    '(function(){',
+    '  var exclude = ' + JSON.stringify(displayExclude) + ';',
+    '  var clone = document.body.cloneNode(true);',
+    '  clone.querySelectorAll("script,style,iframe,noscript,link,meta").forEach(function(e){e.remove()});',
+    '  if (exclude) {',
+    '    exclude.split(",").forEach(function(sel) {',
+    '      try { clone.querySelectorAll(sel.trim()).forEach(function(e) { e.remove(); }); } catch(e) {}',
+    '    });',
+    '  }',
+    '  var lines = clone.innerText.split("\\n").map(function(l){return l.trim()}).filter(function(l){return l.length>0&&!/^\\d+$/.test(l)});',
+    '  var text = lines.join("\\n").slice(0, 20000);',
+    '  var url = "' + base + '/check?text=" + encodeURIComponent(text);',
+    '  if (exclude) { url += "&exclude=" + encodeURIComponent(exclude); }',
+    '  window.open(url, "_blank");',
+    '})();'
+  ].join('\n');
+  document.getElementById('bookmarklet-code').textContent = displayCode;
+}
+updateBookmarklet();
+
+// Rebuild bookmarklet when exclude input changes
+document.getElementById('check-exclude').addEventListener('input', updateBookmarklet);
+
 // Centralized settings restore — runs once at page load
 function restoreSettings() {
   const s = loadSettings();
@@ -1475,6 +1738,14 @@ function restoreSettings() {
   if (s.splitTags !== undefined) document.getElementById('split-tags-check').checked = s.splitTags;
   if (s.stripTags !== undefined && !s.splitTags) document.getElementById('strip-tags-check').checked = s.stripTags;
   toggleStripTagsVisibility();
+  if (s.checkUrl !== undefined) document.getElementById('check-url').value = s.checkUrl;
+  if (s.checkWebtext !== undefined) document.getElementById('check-webtext').value = s.checkWebtext;
+  if (s.checkExclude !== undefined) {
+    document.getElementById('check-exclude').value = s.checkExclude;
+    updateBookmarklet();
+  }
+  if (s.checkColumn !== undefined) document.getElementById('check-column').value = s.checkColumn;
+  updCheck();
 }
 
 updateBadge();

@@ -12,6 +12,7 @@ func SetupRoutes(mux *http.ServeMux, webFS http.FileSystem) {
 	mux.HandleFunc("/api/langs", langsHandler)
 	mux.HandleFunc("/api/extract", extractHandler)
 	mux.HandleFunc("/api/generate", generateHandler)
+	mux.HandleFunc("/api/check", checkHandler)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			http.NotFound(w, r)

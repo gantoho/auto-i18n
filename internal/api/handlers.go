@@ -3,6 +3,7 @@ package api
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -72,7 +73,7 @@ func extractHandler(w http.ResponseWriter, r *http.Request) {
 
 	ext := extractor.New(jsonPath)
 	if splitTagsStr == "true" && stripTagsStr == "true" {
-		http.Error(w, "--split-tags 和 --strip-tags 不能同时使用", http.StatusBadRequest)
+		http.Error(w, "split-tags 和 strip-tags 不能同时使用", http.StatusBadRequest)
 		return
 	}
 	ext.SplitTags = splitTagsStr == "true"
@@ -197,10 +198,6 @@ func generateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	base := strings.TrimSuffix(jsonHeader.Filename, filepath.Ext(jsonHeader.Filename))
-	parts := strings.Split(base, "_")
-	prefix := strings.Join(parts[:len(parts)-1], "_")
-
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
 	filepath.Walk(tmpDir, func(path string, fi os.FileInfo, err error) error {
@@ -224,7 +221,6 @@ func generateHandler(w http.ResponseWriter, r *http.Request) {
 	})
 	zw.Close()
 
-	downloadName := prefix + "_translations.zip"
 	langsStr := strings.Join(sheetData.TargetLangs, ",")
 	w.Header().Set("X-I18n-Count", fmt.Sprintf("%d", len(sheetData.TargetLangs)))
 	w.Header().Set("X-I18n-Langs", langsStr)
@@ -244,7 +240,154 @@ func generateHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	downloadName := "translations.zip"
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, downloadName))
 	w.Write(buf.Bytes())
+}
+
+func checkHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := r.ParseMultipartForm(64 << 20); err != nil {
+		http.Error(w, fmt.Sprintf("parse form: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	xlsxFile, _, err := r.FormFile("xlsx")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("read xlsx file: %v", err), http.StatusBadRequest)
+		return
+	}
+	defer xlsxFile.Close()
+
+	jsonFile, _, err := r.FormFile("json")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("read json file: %v", err), http.StatusBadRequest)
+		return
+	}
+	defer jsonFile.Close()
+
+	xlsxData, err := io.ReadAll(xlsxFile)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("read xlsx content: %v", err), http.StatusBadRequest)
+		return
+	}
+	jsonData, err := io.ReadAll(jsonFile)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("read json content: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	tmpDir, err := os.MkdirTemp("", "auto-i18n-*")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("create temp dir: %v", err), http.StatusInternalServerError)
+		return
+	}
+	defer os.RemoveAll(tmpDir)
+
+	xlsxPath := filepath.Join(tmpDir, "check.xlsx")
+	jsonPath := filepath.Join(tmpDir, "source.json")
+	if err := os.WriteFile(xlsxPath, xlsxData, 0644); err != nil {
+		http.Error(w, fmt.Sprintf("write xlsx: %v", err), http.StatusInternalServerError)
+		return
+	}
+	if err := os.WriteFile(jsonPath, jsonData, 0644); err != nil {
+		http.Error(w, fmt.Sprintf("write json: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	reader := xlsx.NewReader(xlsxPath)
+	sheetData, err := reader.Read()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("read xlsx: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	entries, err := extractor.ExtractEntries(jsonData)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("parse json: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	entryValues := make([]string, len(entries))
+	entryPaths := make([]string, len(entries))
+	for i, e := range entries {
+		entryValues[i] = e.Value
+		entryPaths[i] = e.KeyPath
+	}
+
+	type RowCheck struct {
+		Row       int      `json:"row"`
+		Source    string   `json:"source"`
+		Found     bool     `json:"found"`
+		KeyPath   string   `json:"keyPath,omitempty"`
+		Targets   []string `json:"targets"`
+		FilledCnt int      `json:"filledCnt"`
+		TotalCols int      `json:"totalCols"`
+	}
+
+	results := make([]RowCheck, 0, len(sheetData.Rows))
+	matched := 0
+	totalRows := 0
+	totalFilled := 0
+	totalCells := 0
+
+	for i, row := range sheetData.Rows {
+		src := row[0]
+		if src == "" {
+			continue
+		}
+		totalRows++
+
+		found := false
+		foundPath := ""
+		for j, ev := range entryValues {
+			if ev == src {
+				found = true
+				foundPath = entryPaths[j]
+				break
+			}
+		}
+		if found {
+			matched++
+		}
+
+		targets := make([]string, 0)
+		filled := 0
+		for ci := 1; ci < len(row); ci++ {
+			targets = append(targets, row[ci])
+			if row[ci] != "" {
+				filled++
+			}
+		}
+		totalFilled += filled
+		totalCells += len(row) - 1
+
+		results = append(results, RowCheck{
+			Row:       i + 2,
+			Source:    src,
+			Found:     found,
+			KeyPath:   foundPath,
+			Targets:   targets,
+			FilledCnt: filled,
+			TotalCols: len(row) - 1,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"sourceLang":  sheetData.SourceLang,
+		"targetLangs": sheetData.TargetLangs,
+		"totalRows":   totalRows,
+		"matchedRows": matched,
+		"matchRate":   float64(matched) / float64(totalRows) * 100,
+		"fillRate":    float64(totalFilled) / float64(totalCells) * 100,
+		"totalFilled": totalFilled,
+		"totalCells":  totalCells,
+		"results":     results,
+	})
 }
